@@ -21,7 +21,7 @@
     runc_version: "1.1.12-*"
     
     # Paths
-    ssh_keys_path: "../../../ssh-keys"
+    ssh_keys_path: "../../ssh-keys"
 
   tasks:
     # ==========================================
