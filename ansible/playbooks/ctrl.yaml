@@ -1,0 +1,218 @@
+---
+# ============================================
+# CONTROLLER PLAYBOOK - Runs on ctrl node only
+# ============================================
+# This playbook initializes the Kubernetes
+# control plane and sets up required tools
+# ============================================
+
+- name: Kubernetes Controller Setup
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  vars:
+    # Network configuration (passed from Vagrant)
+    ctrl_ip: "192.168.56.100"
+    pod_network_cidr: "10.244.0.0/16"
+    
+    # Helm repository
+    helm_repo_url: "https://baltocdn.com/helm/stable/debian/"
+    helm_gpg_url: "https://baltocdn.com/helm/signing.asc"
+
+  tasks:
+    # ==========================================
+    # SECTION 1: INITIALIZE KUBERNETES CLUSTER
+    # ==========================================
+    - name: Check if Kubernetes cluster is already initialized
+      stat:
+        path: /etc/kubernetes/admin.conf
+      register: kubeadm_config
+      tags:
+        - init
+
+    - name: Initialize Kubernetes cluster with kubeadm
+      command: >
+        kubeadm init
+        --apiserver-advertise-address={{ ctrl_ip }}
+        --node-name ctrl
+        --pod-network-cidr={{ pod_network_cidr }}
+      when: not kubeadm_config.stat.exists
+      register: kubeadm_init_result
+      tags:
+        - init
+
+    - name: Display kubeadm init output
+      debug:
+        var: kubeadm_init_result.stdout_lines
+      when: kubeadm_init_result is changed
+      tags:
+        - init
+
+    # ==========================================
+    # SECTION 2: SETUP KUBECTL FOR VAGRANT USER
+    # ==========================================
+    - name: Create .kube directory for vagrant user
+      file:
+        path: /home/vagrant/.kube
+        state: directory
+        owner: vagrant
+        group: vagrant
+        mode: '0755'
+      tags:
+        - kubectl
+
+    - name: Copy admin.conf to vagrant user's kube config
+      copy:
+        src: /etc/kubernetes/admin.conf
+        dest: /home/vagrant/.kube/config
+        remote_src: yes
+        owner: vagrant
+        group: vagrant
+        mode: '0600'
+      tags:
+        - kubectl
+
+    # ==========================================
+    # SECTION 3: COPY KUBECONFIG TO HOST
+    # ==========================================
+    - name: Fetch kubeconfig to host machine
+      fetch:
+        src: /etc/kubernetes/admin.conf
+        dest: ../../../kubeconfig
+        flat: yes
+      tags:
+        - kubectl
+
+    # ==========================================
+    # SECTION 4: INSTALL FLANNEL POD NETWORK
+    # ==========================================
+    - name: Copy Flannel manifest to controller
+      copy:
+        src: ../files/kube-flannel.yml
+        dest: /tmp/kube-flannel.yml
+        owner: vagrant
+        group: vagrant
+        mode: '0644'
+      tags:
+        - flannel
+
+    - name: Apply Flannel CNI
+      become: yes
+      become_user: vagrant
+      command: kubectl apply -f /tmp/kube-flannel.yml
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      register: flannel_result
+      changed_when: "'created' in flannel_result.stdout or 'configured' in flannel_result.stdout"
+      tags:
+        - flannel
+
+    # ==========================================
+    # SECTION 5: INSTALL HELM (Fixed)
+    # ==========================================
+    - name: Install Helm dependencies
+      apt:
+        name:
+          - curl
+          - gpg
+          - apt-transport-https
+        state: present
+        update_cache: yes
+      tags:
+        - helm
+
+    - name: Download Helm GPG key
+      get_url:
+        url: https://packages.buildkite.com/helm-linux/helm-debian/gpgkey
+        dest: /tmp/helm-signing.gpg.pub
+        mode: '0644'
+      tags:
+        - helm
+
+    - name: De-armor Helm GPG key
+      shell: |
+        cat /tmp/helm-signing.gpg.pub | gpg --dearmor -o /usr/share/keyrings/helm.gpg
+      args:
+        creates: /usr/share/keyrings/helm.gpg
+      tags:
+        - helm
+
+    - name: Add Helm apt repository
+      apt_repository:
+        # REMOVED [arch=amd64] to support both Intel and Apple Silicon/ARM VMs
+        repo: "deb [signed-by=/usr/share/keyrings/helm.gpg] https://packages.buildkite.com/helm-linux/helm-debian/any/ any main"
+        state: present
+        filename: helm-stable-debian
+        update_cache: yes
+      tags:
+        - helm
+
+    - name: Install Helm
+      apt:
+        name: helm
+        state: present
+        # Forced update to ensure the new repo is recognized immediately
+        update_cache: yes
+      tags:
+        - helm
+    # ==========================================
+    # SECTION 6: INSTALL HELM DIFF PLUGIN (Optional)
+    # ==========================================
+    - name: Remove broken helm-diff plugin if exists
+      become: yes
+      become_user: vagrant
+      file:
+        path: /home/vagrant/.local/share/helm/plugins/helm-diff
+        state: absent
+      tags:
+        - helm
+
+    - name: Install helm-diff plugin (optional - may fail on some systems)
+      become: yes
+      become_user: vagrant
+      command: helm plugin install https://github.com/databus23/helm-diff --version v3.9.4
+      register: helm_diff_install
+      ignore_errors: yes
+      tags:
+        - helm
+
+    - name: Display helm-diff installation result
+      debug:
+        msg: "helm-diff plugin installation {{ 'succeeded' if helm_diff_install.rc == 0 else 'skipped (optional)' }}"
+      tags:
+        - helm
+
+    # ==========================================
+    # SECTION 7: WAIT FOR CLUSTER TO BE READY
+    # ==========================================
+    - name: Wait for all control plane pods to be ready
+      become: yes
+      become_user: vagrant
+      shell: |
+        kubectl wait --for=condition=Ready pods --all -n kube-system --timeout=300s
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      register: wait_result
+      retries: 5
+      delay: 10
+      until: wait_result.rc == 0
+      tags:
+        - wait
+
+    - name: Display cluster status
+      become: yes
+      become_user: vagrant
+      command: kubectl get nodes -o wide
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      register: nodes_status
+      changed_when: false
+      tags:
+        - status
+
+    - name: Show cluster nodes
+      debug:
+        var: nodes_status.stdout_lines
+      tags:
+        - status

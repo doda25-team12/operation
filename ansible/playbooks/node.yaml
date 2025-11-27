@@ -1,0 +1,90 @@
+---
+# ============================================
+# NODE PLAYBOOK - Runs on worker nodes only
+# ============================================
+# This playbook joins worker nodes to the
+# Kubernetes cluster
+# ============================================
+
+- name: Kubernetes Worker Node Setup
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  vars:
+    ctrl_ip: "192.168.56.100"
+
+  tasks:
+    # ==========================================
+    # SECTION 1: CHECK IF ALREADY JOINED
+    # ==========================================
+    - name: Check if node has already joined the cluster
+      stat:
+        path: /etc/kubernetes/kubelet.conf
+      register: kubelet_conf
+      tags:
+        - join
+
+    # ==========================================
+    # SECTION 2: GET JOIN COMMAND FROM CONTROLLER
+    # ==========================================
+    - name: Generate join command on controller
+      shell: kubeadm token create --print-join-command
+      delegate_to: ctrl
+      delegate_facts: true
+      register: join_command
+      when: not kubelet_conf.stat.exists
+      tags:
+        - join
+
+    - name: Display join command
+      debug:
+        var: join_command.stdout
+      when: not kubelet_conf.stat.exists
+      tags:
+        - join
+
+    # ==========================================
+    # SECTION 3: JOIN THE CLUSTER
+    # ==========================================
+    - name: Join worker node to the cluster
+      command: "{{ join_command.stdout }}"
+      when: not kubelet_conf.stat.exists
+      register: join_result
+      tags:
+        - join
+
+    - name: Display join result
+      debug:
+        var: join_result.stdout_lines
+      when: join_result is changed
+      tags:
+        - join
+
+    # ==========================================
+    # SECTION 4: VERIFY NODE STATUS
+    # ==========================================
+    - name: Wait for node to be ready
+      pause:
+        seconds: 10
+      when: join_result is changed
+      tags:
+        - verify
+
+    - name: Verify node has joined successfully
+      command: kubectl get nodes
+      delegate_to: ctrl
+      become: yes
+      become_user: vagrant
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      register: nodes_output
+      changed_when: false
+      tags:
+        - verify
+
+    - name: Display cluster nodes
+      debug:
+        var: nodes_output.stdout_lines
+      tags:
+        - verify
