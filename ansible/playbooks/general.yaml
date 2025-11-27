@@ -1,0 +1,353 @@
+---
+# ============================================
+# GENERAL PLAYBOOK - Runs on ALL VMs
+# ============================================
+# This playbook sets up the common environment
+# for all Kubernetes cluster nodes
+# ============================================
+
+- name: General Kubernetes Node Setup
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  vars:
+    # Kubernetes version
+    k8s_version: "1.32"
+    k8s_full_version: "1.32.4-1.1"
+    
+    # Container runtime versions
+    containerd_version: "1.7.24-*"
+    runc_version: "1.1.12-*"
+    
+    # Paths
+    ssh_keys_path: "../../../ssh-keys"
+
+  tasks:
+    # ==========================================
+    # SECTION 1: SSH KEY REGISTRATION
+    # ==========================================
+    - name: Register SSH public keys for team members
+      authorized_key:
+        user: vagrant
+        state: present
+        key: "{{ lookup('file', item) }}"
+      with_fileglob:
+        - "{{ ssh_keys_path }}/*.pub"
+      tags:
+        - ssh
+
+    # ==========================================
+    # SECTION 2: DISABLE SWAP
+    # ==========================================
+    - name: Disable swap immediately
+      command: swapoff -a
+      changed_when: false
+      tags:
+        - swap
+
+    - name: Remove swap entry from /etc/fstab
+      lineinfile:
+        path: /etc/fstab
+        regexp: '.*swap.*'
+        state: absent
+      tags:
+        - swap
+
+    # ==========================================
+    # SECTION 3: KERNEL MODULES
+    # ==========================================
+    - name: Copy kernel modules configuration
+      copy:
+        src: ../files/k8s.conf
+        dest: /etc/modules-load.d/k8s.conf
+        owner: root
+        group: root
+        mode: '0644'
+      tags:
+        - kernel
+
+    - name: Load overlay module
+      modprobe:
+        name: overlay
+        state: present
+      tags:
+        - kernel
+
+    - name: Load br_netfilter module
+      modprobe:
+        name: br_netfilter
+        state: present
+      tags:
+        - kernel
+
+    # ==========================================
+    # SECTION 4: SYSCTL SETTINGS (IPv4 Forwarding)
+    # ==========================================
+    - name: Create sysctl configuration for Kubernetes
+      copy:
+        dest: /etc/sysctl.d/k8s.conf
+        content: |
+          net.ipv4.ip_forward = 1
+          net.bridge.bridge-nf-call-iptables = 1
+          net.bridge.bridge-nf-call-ip6tables = 1
+        owner: root
+        group: root
+        mode: '0644'
+      tags:
+        - sysctl
+
+    - name: Enable net.ipv4.ip_forward
+      sysctl:
+        name: net.ipv4.ip_forward
+        value: '1'
+        sysctl_set: yes
+        state: present
+        reload: yes
+      tags:
+        - sysctl
+
+    - name: Enable net.bridge.bridge-nf-call-iptables
+      sysctl:
+        name: net.bridge.bridge-nf-call-iptables
+        value: '1'
+        sysctl_set: yes
+        state: present
+        reload: yes
+      tags:
+        - sysctl
+
+    - name: Enable net.bridge.bridge-nf-call-ip6tables
+      sysctl:
+        name: net.bridge.bridge-nf-call-ip6tables
+        value: '1'
+        sysctl_set: yes
+        state: present
+        reload: yes
+      tags:
+        - sysctl
+
+    # ==========================================
+    # SECTION 5: HOSTS FILE MANAGEMENT
+    # ==========================================
+    - name: Copy hosts file for hostname resolution
+      copy:
+        src: ../files/hosts
+        dest: /etc/hosts
+        owner: root
+        group: root
+        mode: '0644'
+      tags:
+        - hosts
+
+    # ==========================================
+    # SECTION 5.1: DNS CONFIGURATION
+    # ==========================================
+    - name: Ensure systemd-resolved is running
+      service:
+        name: systemd-resolved
+        state: started
+        enabled: yes
+      tags:
+        - dns
+
+    - name: Configure DNS servers in resolved.conf
+      copy:
+        dest: /etc/systemd/resolved.conf
+        content: |
+          [Resolve]
+          DNS=8.8.8.8 8.8.4.4 1.1.1.1
+          FallbackDNS=208.67.222.222 208.67.220.220
+          DNSStubListener=yes
+        owner: root
+        group: root
+        mode: '0644'
+      notify: Restart systemd-resolved
+      tags:
+        - dns
+
+    - name: Ensure /etc/resolv.conf points to stub resolver
+      file:
+        src: /run/systemd/resolve/stub-resolv.conf
+        dest: /etc/resolv.conf
+        state: link
+        force: yes
+      tags:
+        - dns
+
+    # ==========================================
+    # SECTION 6: INSTALL PREREQUISITES
+    # ==========================================
+    - name: Install prerequisite packages
+      apt:
+        name:
+          - apt-transport-https
+          - ca-certificates
+          - curl
+          - gnupg
+          - lsb-release
+          - software-properties-common
+        state: present
+        update_cache: yes
+      tags:
+        - packages
+
+    # ==========================================
+    # SECTION 7: KUBERNETES REPOSITORY
+    # ==========================================
+    - name: Create keyrings directory
+      file:
+        path: /etc/apt/keyrings
+        state: directory
+        mode: '0755'
+      tags:
+        - k8s-repo
+
+    - name: Download Kubernetes GPG key
+      get_url:
+        url: "https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/deb/Release.key"
+        dest: /tmp/kubernetes-release.key
+        mode: '0644'
+      tags:
+        - k8s-repo
+
+    - name: De-armor Kubernetes GPG key
+      shell: |
+        cat /tmp/kubernetes-release.key | gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+      args:
+        creates: /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+      tags:
+        - k8s-repo
+
+    - name: Add Kubernetes apt repository
+      apt_repository:
+        repo: "deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v{{ k8s_version }}/deb/ /"
+        state: present
+        filename: kubernetes
+        update_cache: yes
+      tags:
+        - k8s-repo
+
+    # ==========================================
+    # SECTION 8: INSTALL CONTAINER RUNTIME
+    # ==========================================
+    - name: Install containerd
+      apt:
+        name: "containerd"
+        state: present
+        update_cache: yes
+      tags:
+        - containerd
+
+    - name: Install runc
+      apt:
+        name: "runc"
+        state: present
+      tags:
+        - containerd
+
+    # ==========================================
+    # SECTION 9: CONFIGURE CONTAINERD
+    # ==========================================
+    - name: Create containerd configuration directory
+      file:
+        path: /etc/containerd
+        state: directory
+        mode: '0755'
+      tags:
+        - containerd
+
+    - name: Generate default containerd configuration
+      shell: containerd config default > /etc/containerd/config.toml
+      args:
+        creates: /etc/containerd/config.toml
+      tags:
+        - containerd
+
+    - name: Configure containerd - Set SystemdCgroup to true
+      lineinfile:
+        path: /etc/containerd/config.toml
+        regexp: '(\s*)SystemdCgroup\s*=\s*false'
+        line: '\1SystemdCgroup = true'
+        backrefs: yes
+      notify: Restart containerd
+      tags:
+        - containerd
+
+    - name: Configure containerd - Update sandbox image
+      lineinfile:
+        path: /etc/containerd/config.toml
+        regexp: '(\s*)sandbox_image\s*=\s*".*"'
+        line: '\1sandbox_image = "registry.k8s.io/pause:3.10"'
+        backrefs: yes
+      notify: Restart containerd
+      tags:
+        - containerd
+
+    - name: Configure containerd - Disable AppArmor
+      lineinfile:
+        path: /etc/containerd/config.toml
+        regexp: '(\s*)disable_apparmor\s*=\s*false'
+        line: '\1disable_apparmor = true'
+        backrefs: yes
+      notify: Restart containerd
+      tags:
+        - containerd
+
+    # ==========================================
+    # SECTION 10: INSTALL KUBERNETES TOOLS
+    # ==========================================
+    - name: Install Kubernetes packages
+      apt:
+        name:
+          - "kubelet={{ k8s_full_version }}"
+          - "kubeadm={{ k8s_full_version }}"
+          - "kubectl={{ k8s_full_version }}"
+        state: present
+        update_cache: yes
+      tags:
+        - k8s-tools
+
+    - name: Hold Kubernetes packages at current version
+      dpkg_selections:
+        name: "{{ item }}"
+        selection: hold
+      loop:
+        - kubelet
+        - kubeadm
+        - kubectl
+      tags:
+        - k8s-tools
+
+    # ==========================================
+    # SECTION 11: START SERVICES
+    # ==========================================
+    - name: Enable and start containerd service
+      service:
+        name: containerd
+        enabled: yes
+        state: started
+      tags:
+        - services
+
+    - name: Enable and start kubelet service
+      service:
+        name: kubelet
+        enabled: yes
+        state: started
+      tags:
+        - services
+
+  # ==========================================
+  # HANDLERS
+  # ==========================================
+  handlers:
+    - name: Restart containerd
+      service:
+        name: containerd
+        state: restarted
+
+    - name: Restart systemd-resolved
+      service:
+        name: systemd-resolved
+        state: restarted

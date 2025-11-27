@@ -1,0 +1,34 @@
+# Vagrant
+.vagrant/
+*.box
+
+# Kubernetes config (contains credentials)
+kubeconfig
+admin.conf
+*.kubeconfig
+
+# Ansible
+*.retry
+inventory.cfg
+
+# SSH
+*.pem
+id_rsa
+id_ed25519
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Logs
+*.log
+
+# Temporary files
+tmp/
+temp/
