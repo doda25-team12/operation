@@ -11,3 +11,4 @@
 - Yuvraj Singh Pathania (6495044) : Worked on setting up the kubernetes workers (Section 1.3, Steps 18-19): implemented worker node join automation in node.yaml using kubeadm token delegation, fixed SSH keys path in general.yaml, added SSH public key for team requirement, and verified successful cluster join for all worker nodes
 - Maksym Ziemlewski (5530458): Cooperated in setting up step 1.4, Finalizing the Cluster Setup
 - Stilyan Penchev (5749131): I worked with Andrei on 1.4. We did encounter a lot of issues connected to the WSL setup.
+- Andrei Paduraru (5774489): I mainly worked on troubleshooting and finding solutions for Windows users. 
