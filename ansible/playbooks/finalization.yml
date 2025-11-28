@@ -1,0 +1,370 @@
+---
+# ============================================
+# FINALIZATION PLAYBOOK - Cluster Setup
+# ============================================
+# This playbook finalizes the Kubernetes
+# cluster setup with MetalLB, Ingress,
+# Dashboard, and Istio.
+#
+# Run from host with:
+# ansible-playbook -u vagrant -i 192.168.56.100, finalization.yml
+# ============================================
+
+- name: Finalize Kubernetes Cluster Setup
+  hosts: all
+  become: yes
+  gather_facts: yes
+
+  vars:
+    # MetalLB configuration
+    metallb_version: "0.14.9"
+    metallb_ip_range: "192.168.56.90-192.168.56.99"
+
+    # Ingress Controller configuration
+    ingress_nginx_ip: "192.168.56.95"
+
+    # Istio configuration
+    istio_version: "1.25.2"
+    istio_gateway_ip: "192.168.56.96"
+
+    # Dashboard configuration
+    dashboard_domain: "dashboard.local"
+
+  tasks:
+    # ==========================================
+    # SECTION 1: INSTALL METALLB
+    # ==========================================
+    - name: Download MetalLB native manifest
+      get_url:
+        url: "https://raw.githubusercontent.com/metallb/metallb/v{{ metallb_version }}/config/manifests/metallb-native.yaml"
+        dest: /tmp/metallb-native.yaml
+        mode: '0644'
+      tags:
+        - metallb
+
+    - name: Apply MetalLB manifest
+      become_user: vagrant
+      command: kubectl apply -f /tmp/metallb-native.yaml
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      tags:
+        - metallb
+
+    - name: Wait for MetalLB controller to be ready
+      become_user: vagrant
+      command: >
+        kubectl wait -n metallb-system
+        -l app=metallb,component=controller
+        --for=condition=ready pod
+        --timeout=120s
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      retries: 3
+      delay: 10
+      register: metallb_wait
+      until: metallb_wait.rc == 0
+      tags:
+        - metallb
+
+    - name: Copy MetalLB IPAddressPool manifest
+      copy:
+        src: ../files/k8s/metallb-ippool.yaml
+        dest: /tmp/metallb-ippool.yaml
+        mode: '0644'
+      tags:
+        - metallb
+
+    - name: Apply MetalLB IPAddressPool
+      become_user: vagrant
+      command: kubectl apply -f /tmp/metallb-ippool.yaml
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      tags:
+        - metallb
+
+    - name: Copy MetalLB L2Advertisement manifest
+      copy:
+        src: ../files/k8s/metallb-l2advert.yaml
+        dest: /tmp/metallb-l2advert.yaml
+        mode: '0644'
+      tags:
+        - metallb
+
+    - name: Apply MetalLB L2Advertisement
+      become_user: vagrant
+      command: kubectl apply -f /tmp/metallb-l2advert.yaml
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      tags:
+        - metallb
+
+    # ==========================================
+    # SECTION 2: INSTALL NGINX INGRESS CONTROLLER
+    # ==========================================
+    - name: Add Nginx Ingress Helm repository
+      become_user: vagrant
+      command: >
+        helm repo add ingress-nginx https://kubernetes.github.io/ingress-nginx
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      register: helm_repo_add
+      changed_when: "'already exists' not in helm_repo_add.stderr"
+      failed_when: helm_repo_add.rc != 0 and 'already exists' not in helm_repo_add.stderr
+      tags:
+        - ingress
+
+    - name: Update Helm repositories
+      become_user: vagrant
+      command: helm repo update
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      tags:
+        - ingress
+
+    - name: Check if Nginx Ingress is already installed
+      become_user: vagrant
+      command: helm list -n ingress-nginx
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      register: nginx_installed
+      changed_when: false
+      tags:
+        - ingress
+
+    - name: Install Nginx Ingress Controller with Helm
+      become_user: vagrant
+      command: >
+        helm install ingress-nginx ingress-nginx/ingress-nginx
+        --namespace ingress-nginx
+        --create-namespace
+        --set controller.service.loadBalancerIP={{ ingress_nginx_ip }}
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      when: "'ingress-nginx' not in nginx_installed.stdout"
+      tags:
+        - ingress
+
+    - name: Wait for Nginx Ingress Controller to be ready
+      become_user: vagrant
+      command: >
+        kubectl wait -n ingress-nginx
+        --for=condition=ready pod
+        --selector=app.kubernetes.io/component=controller
+        --timeout=120s
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      retries: 3
+      delay: 10
+      register: nginx_wait
+      until: nginx_wait.rc == 0
+      tags:
+        - ingress
+
+    # ==========================================
+    # SECTION 3: INSTALL KUBERNETES DASHBOARD
+    # ==========================================
+    - name: Add Kubernetes Dashboard Helm repository
+      become_user: vagrant
+      command: >
+        helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      register: dashboard_repo_add
+      changed_when: "'already exists' not in dashboard_repo_add.stderr"
+      failed_when: dashboard_repo_add.rc != 0 and 'already exists' not in dashboard_repo_add.stderr
+      tags:
+        - dashboard
+
+    - name: Update Helm repositories
+      become_user: vagrant
+      command: helm repo update
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      tags:
+        - dashboard
+
+    - name: Check if Kubernetes Dashboard is already installed
+      become_user: vagrant
+      command: helm list -n kubernetes-dashboard
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      register: dashboard_installed
+      changed_when: false
+      tags:
+        - dashboard
+
+    - name: Install Kubernetes Dashboard with Helm
+      become_user: vagrant
+      command: >
+        helm install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard
+        --namespace kubernetes-dashboard
+        --create-namespace
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      when: "'kubernetes-dashboard' not in dashboard_installed.stdout"
+      tags:
+        - dashboard
+
+    - name: Copy Dashboard admin user manifest
+      copy:
+        src: ../files/k8s/dashboard-admin-user.yaml
+        dest: /tmp/dashboard-admin-user.yaml
+        mode: '0644'
+      tags:
+        - dashboard
+
+    - name: Create Dashboard admin user
+      become_user: vagrant
+      command: kubectl apply -f /tmp/dashboard-admin-user.yaml
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      tags:
+        - dashboard
+
+    - name: Copy Dashboard Ingress manifest
+      copy:
+        src: ../files/k8s/dashboard-ingress.yaml
+        dest: /tmp/dashboard-ingress.yaml
+        mode: '0644'
+      tags:
+        - dashboard
+
+    - name: Create Dashboard Ingress
+      become_user: vagrant
+      command: kubectl apply -f /tmp/dashboard-ingress.yaml
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      tags:
+        - dashboard
+
+    - name: Display instructions to get Dashboard token
+      debug:
+        msg: |
+          ============================================
+          Kubernetes Dashboard Setup Complete!
+          ============================================
+
+          Access the dashboard at: http://{{ dashboard_domain }}
+          (Add "{{ ingress_nginx_ip }} {{ dashboard_domain }}" to your /etc/hosts)
+
+          To get the login token, run:
+          kubectl -n kubernetes-dashboard create token admin-user
+
+          Or from the controller VM:
+          vagrant ssh ctrl
+          kubectl -n kubernetes-dashboard create token admin-user
+          ============================================
+      tags:
+        - dashboard
+
+    # ==========================================
+    # SECTION 4: INSTALL ISTIO
+    # ==========================================
+    - name: Check if Istio is already downloaded
+      stat:
+        path: /home/vagrant/istio-{{ istio_version }}
+      register: istio_dir
+      tags:
+        - istio
+
+    - name: Download Istio
+      become_user: vagrant
+      get_url:
+        url: "https://github.com/istio/istio/releases/download/{{ istio_version }}/istio-{{ istio_version }}-linux-arm64.tar.gz"
+        dest: /home/vagrant/istio-{{ istio_version }}.tar.gz
+        mode: '0644'
+      when: not istio_dir.stat.exists
+      tags:
+        - istio
+
+    - name: Extract Istio
+      become_user: vagrant
+      unarchive:
+        src: /home/vagrant/istio-{{ istio_version }}.tar.gz
+        dest: /home/vagrant/
+        remote_src: yes
+      when: not istio_dir.stat.exists
+      tags:
+        - istio
+
+    - name: Add istioctl to PATH for vagrant user
+      lineinfile:
+        path: /home/vagrant/.bashrc
+        line: 'export PATH=$PATH:/home/vagrant/istio-{{ istio_version }}/bin'
+        create: yes
+        owner: vagrant
+        group: vagrant
+        mode: '0644'
+      tags:
+        - istio
+
+    - name: Check if Istio is already installed
+      become_user: vagrant
+      command: kubectl get namespace istio-system
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      register: istio_installed
+      failed_when: false
+      changed_when: false
+      tags:
+        - istio
+
+    - name: Copy Istio configuration
+      copy:
+        src: ../files/k8s/istio-config.yaml
+        dest: /tmp/istio-config.yaml
+        mode: '0644'
+      tags:
+        - istio
+
+    - name: Install Istio with custom configuration
+      become_user: vagrant
+      command: >
+        /home/vagrant/istio-{{ istio_version }}/bin/istioctl install -y -f /tmp/istio-config.yaml
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      when: istio_installed.rc != 0
+      tags:
+        - istio
+
+    - name: Display Istio installation complete message
+      debug:
+        msg: |
+          ============================================
+          Istio Installation Complete!
+          ============================================
+
+          Istio Gateway IP: {{ istio_gateway_ip }}
+
+          The istioctl binary is available at:
+          /home/vagrant/istio-{{ istio_version }}/bin/istioctl
+
+          It's been added to the PATH for the vagrant user.
+          ============================================
+      tags:
+        - istio
+
+    # ==========================================
+    # SECTION 5: FINAL SUMMARY
+    # ==========================================
+    - name: Display final summary
+      debug:
+        msg: |
+          ============================================
+          KUBERNETES CLUSTER FINALIZATION COMPLETE
+          ============================================
+
+          MetalLB IP Range: {{ metallb_ip_range }}
+          Nginx Ingress IP: {{ ingress_nginx_ip }}
+          Istio Gateway IP: {{ istio_gateway_ip }}
+
+          Dashboard URL: http://{{ dashboard_domain }}
+
+          Add to your /etc/hosts:
+          {{ ingress_nginx_ip }} {{ dashboard_domain }}
+
+          To get Dashboard token:
+          kubectl -n kubernetes-dashboard create token admin-user
+          ============================================
+      tags:
+        - summary
