@@ -35,10 +35,18 @@ Vagrant.configure("2") do |config|
   # ==========================================
   config.vm.define "ctrl", primary: true do |ctrl|
     ctrl.vm.hostname = "ctrl"
-    
+
     # Host-only network with fixed IP
     ctrl.vm.network "private_network", ip: CTRL_IP
-    
+
+    # Shared folder for ML model files
+    ctrl.vm.synced_folder "#{File.dirname(__FILE__)}/models",
+      "/mnt/shared/models",
+      type: "virtualbox",
+      mount_options: ["dmode=777", "fmode=666"],
+      owner: "vagrant",
+      group: "vagrant"
+
     # VirtualBox provider settings
     ctrl.vm.provider "virtualbox" do |vb|
       vb.name = "k8s-ctrl"
@@ -79,13 +87,21 @@ Vagrant.configure("2") do |config|
   (1..NUM_WORKERS).each do |i|
     config.vm.define "node-#{i}" do |node|
       node.vm.hostname = "node-#{i}"
-      
+
       # Calculate worker IP using template arithmetic
       worker_ip = "#{NETWORK_PREFIX}.#{WORKER_IP_START + i - 1}"
-      
+
       # Host-only network with fixed IP
       node.vm.network "private_network", ip: worker_ip
-      
+
+      # Shared folder for ML model files
+      node.vm.synced_folder "#{File.dirname(__FILE__)}/models",
+        "/mnt/shared/models",
+        type: "virtualbox",
+        mount_options: ["dmode=777", "fmode=666"],
+        owner: "vagrant",
+        group: "vagrant"
+
       # VirtualBox provider settings
       node.vm.provider "virtualbox" do |vb|
         vb.name = "k8s-node-#{i}"

@@ -1,0 +1,61 @@
+{{- if .Values.appService.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.appService.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "sms-spam-detector.appService.labels" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.appService.replicas }}
+  selector:
+    matchLabels:
+      {{- include "sms-spam-detector.appService.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "sms-spam-detector.appService.selectorLabels" . | nindent 8 }}
+        component: frontend
+    spec:
+      {{- if .Values.imagePullSecrets.enabled }}
+      imagePullSecrets:
+        - name: {{ .Values.imagePullSecrets.name }}
+      {{- end }}
+      containers:
+      - name: {{ .Values.appService.name }}
+        image: {{ include "sms-spam-detector.appService.image" . }}
+        imagePullPolicy: {{ .Values.imagePullPolicy }}
+        ports:
+        - containerPort: {{ .Values.appService.service.port }}
+          name: http
+          protocol: TCP
+        env:
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: APP_INTERNAL_PORT
+        - name: MODEL_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: MODEL_SERVICE_URL
+        resources:
+          {{- toYaml .Values.appService.resources | nindent 10 }}
+        {{- if .Values.appService.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.appService.livenessProbe.path }}
+            port: {{ .Values.appService.service.port }}
+          initialDelaySeconds: {{ .Values.appService.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.appService.livenessProbe.periodSeconds }}
+        {{- end }}
+        {{- if .Values.appService.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.appService.readinessProbe.path }}
+            port: {{ .Values.appService.service.port }}
+          initialDelaySeconds: {{ .Values.appService.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.appService.readinessProbe.periodSeconds }}
+        {{- end }}
+{{- end }}

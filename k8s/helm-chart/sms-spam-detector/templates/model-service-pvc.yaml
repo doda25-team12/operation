@@ -1,0 +1,16 @@
+{{- if .Values.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-files-pvc
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "sms-spam-detector.labels" . | nindent 4 }}
+    app: {{ .Values.modelService.name }}
+spec:
+  accessModes:
+    - {{ .Values.persistence.accessMode }}
+  resources:
+    requests:
+      storage: {{ .Values.persistence.size }}
+{{- end }}

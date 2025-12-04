@@ -1,0 +1,12 @@
+apiVersion: v2
+name: sms-spam-detector
+description: SMS Spam Detection microservices with ML backend
+type: application
+version: 0.1.0
+appVersion: "latest"
+keywords:
+  - sms
+  - spam-detection
+  - machine-learning
+maintainers:
+  - name: DODA Team 12
