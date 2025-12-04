@@ -1,0 +1,89 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.modelService.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: sms-checker
+    component: {{ .Values.modelService.name }}
+spec:
+  replicas: {{ .Values.modelService.replicaCount }}
+  selector:
+    matchLabels:
+      app: sms-checker
+      component: {{ .Values.modelService.name }}
+  template:
+    metadata:
+      labels:
+        app: sms-checker
+        component: {{ .Values.modelService.name }}
+    spec:
+      {{- if .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.image.pullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: {{ .Values.modelService.name }}
+        image: "{{ .Values.image.registry }}/{{ .Values.image.organization }}/{{ .Values.modelService.image.repository }}:{{ .Values.modelService.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.modelService.port }}
+          name: http
+          protocol: TCP
+        env:
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: sms-checker-config
+              key: MODEL_INTERNAL_PORT
+        - name: MODEL_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: sms-checker-config
+              key: MODEL_VERSION
+        - name: MODEL_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: sms-checker-config
+              key: MODEL_BASE_URL
+        - name: MODEL_SERVICE_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: sms-checker-config
+              key: MODEL_INTERNAL_PORT
+        volumeMounts:
+        - name: model-storage
+          mountPath: /models
+          readOnly: true
+        - name: output-storage
+          mountPath: /root/sms/output
+        resources:
+          {{- toYaml .Values.modelService.resources | nindent 10 }}
+        {{- if .Values.modelService.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.modelService.livenessProbe.path }}
+            port: {{ .Values.modelService.port }}
+          initialDelaySeconds: {{ .Values.modelService.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.modelService.livenessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.modelService.livenessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.modelService.livenessProbe.failureThreshold }}
+        {{- end }}
+        {{- if .Values.modelService.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.modelService.readinessProbe.path }}
+            port: {{ .Values.modelService.port }}
+          initialDelaySeconds: {{ .Values.modelService.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.modelService.readinessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.modelService.readinessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.modelService.readinessProbe.failureThreshold }}
+        {{- end }}
+      volumes:
+      - name: model-storage
+        persistentVolumeClaim:
+          claimName: model-storage-pvc
+      - name: output-storage
+        persistentVolumeClaim:
+          claimName: model-storage-pvc
+      restartPolicy: Always

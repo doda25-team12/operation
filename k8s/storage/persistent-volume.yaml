@@ -1,0 +1,36 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: model-storage-pv
+  labels:
+    type: local
+    app: sms-checker
+spec:
+  storageClassName: manual
+  capacity:
+    storage: 1Gi
+  accessModes:
+    - ReadWriteMany
+  hostPath:
+    # This path should point to the VirtualBox shared folder
+    # On the Vagrant VMs, shared folders are typically mounted at /vagrant
+    # or can be configured to mount at a specific location
+    path: /mnt/shared-models
+  persistentVolumeReclaimPolicy: Retain
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: model-storage-pvc
+  namespace: sms-checker
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 1Gi
+  selector:
+    matchLabels:
+      type: local
+      app: sms-checker

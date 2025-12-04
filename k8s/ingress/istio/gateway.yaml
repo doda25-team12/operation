@@ -1,0 +1,35 @@
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: sms-checker-gateway
+  namespace: sms-checker
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - "sms-checker-istio.local"
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: sms-checker-vs
+  namespace: sms-checker
+spec:
+  hosts:
+  - "sms-checker-istio.local"
+  gateways:
+  - sms-checker-gateway
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: app-service
+        port:
+          number: 8080

@@ -1,0 +1,144 @@
+# Default values for sms-checker Helm chart
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+# Global settings
+namespace: sms-checker
+
+# Image configuration
+image:
+  registry: ghcr.io
+  organization: doda25-team12
+  pullPolicy: Always
+  # Optionally specify image pull secrets for private registries
+  pullSecrets: []
+    # - name: regcred
+
+# Application service configuration
+appService:
+  name: app-service
+  replicaCount: 2
+  image:
+    repository: app
+    tag: latest
+  port: 8080
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+  livenessProbe:
+    enabled: true
+    path: /sms/
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    enabled: true
+    path: /sms/
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+# Model service configuration
+modelService:
+  name: model-service
+  replicaCount: 2
+  image:
+    repository: model-service
+    tag: latest
+  port: 8081
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+  livenessProbe:
+    enabled: true
+    path: /apidocs
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 3
+  readinessProbe:
+    enabled: true
+    path: /apidocs
+    initialDelaySeconds: 10
+    periodSeconds: 5
+    timeoutSeconds: 3
+    failureThreshold: 3
+  # Model configuration
+  model:
+    version: "0.0.1"
+    # Base URL for downloading models (leave empty to use mounted storage)
+    baseUrl: ""
+
+# Storage configuration for models
+storage:
+  enabled: true
+  # Storage class (use 'manual' for hostPath/VirtualBox shared folders)
+  storageClassName: manual
+  accessMode: ReadWriteMany
+  size: 1Gi
+  # Host path for VirtualBox shared folder
+  # This should be configured to point to the shared folder mount point
+  hostPath: /mnt/shared-models
+
+# Ingress configuration
+ingress:
+  # Nginx Ingress
+  nginx:
+    enabled: true
+    className: nginx
+    host: sms-checker.local
+    annotations:
+      nginx.ingress.kubernetes.io/rewrite-target: /
+      nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    tls: []
+    # - secretName: sms-checker-tls
+    #   hosts:
+    #     - sms-checker.local
+
+  # Istio Gateway (optional)
+  istio:
+    enabled: false
+    host: sms-checker-istio.local
+    gateway:
+      name: sms-checker-gateway
+
+# Secrets configuration
+# IMPORTANT: These are placeholder values and should be overridden during installation
+# Use --set or --values flags with kubectl/helm to provide actual values
+secrets:
+  # Container registry credentials (if using private registry)
+  registry:
+    username: "placeholder-username"
+    token: "placeholder-token"
+
+  # Model download credentials (if MODEL_BASE_URL requires authentication)
+  modelDownload:
+    token: "placeholder-model-token"
+
+  # Add other sensitive configuration here
+  # Example: SMTP credentials, API keys, database passwords, etc.
+  # smtp:
+  #   password: "placeholder-smtp-password"
+
+# Service configuration
+service:
+  type: ClusterIP
+  sessionAffinity: None
+
+# ConfigMap data
+config:
+  appInternalPort: "8080"
+  modelInternalPort: "8081"
+  # This will be automatically constructed as http://{{ modelService.name }}:{{ modelService.port }}
+  # but can be overridden if needed
+  modelServiceUrl: ""

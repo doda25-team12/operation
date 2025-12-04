@@ -1,0 +1,37 @@
+{{- if .Values.ingress.istio.enabled }}
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: {{ .Values.ingress.istio.gateway.name }}
+  namespace: {{ .Values.namespace }}
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - {{ .Values.ingress.istio.host | quote }}
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: sms-checker-vs
+  namespace: {{ .Values.namespace }}
+spec:
+  hosts:
+  - {{ .Values.ingress.istio.host | quote }}
+  gateways:
+  - {{ .Values.ingress.istio.gateway.name }}
+  http:
+  - match:
+    - uri:
+        prefix: /
+    route:
+    - destination:
+        host: {{ .Values.appService.name }}
+        port:
+          number: {{ .Values.appService.port }}
+{{- end }}

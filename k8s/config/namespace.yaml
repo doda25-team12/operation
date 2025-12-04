@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: sms-checker
+  labels:
+    name: sms-checker
+    app: sms-checker

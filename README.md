@@ -1,6 +1,20 @@
 # SMS Checker - Operation Repository
 
-This repository contains the orchestration configuration for running the SMS Checker application using Docker Compose. The SMS Checker is a distributed system for detecting spam in SMS messages, demonstrating a microservice architecture with a Java/Spring Boot frontend and a Python/Flask backend.
+This repository contains the orchestration configuration for running the SMS Checker application using either **Docker Compose** or **Kubernetes**. The SMS Checker is a distributed system for detecting spam in SMS messages, demonstrating a microservice architecture with a Java/Spring Boot frontend and a Python/Flask backend.
+
+## Deployment Options
+
+Choose the deployment method that best fits your needs:
+
+1. **[Docker Compose](#docker-compose-deployment)** - Quick local development and testing
+2. **[Kubernetes](#kubernetes-deployment)** - Production-ready deployment with:
+   - Deployments, Services, and Ingress
+   - ConfigMaps and Secrets for configuration management
+   - Helm chart for flexible installation
+   - Shared storage using VirtualBox shared folders
+   - Support for both Nginx Ingress and Istio Gateway
+
+---
 
 ## System Architecture
 
@@ -65,6 +79,10 @@ If pre-trained models are available from a release URL, configure the download i
 MODEL_VERSION=0.0.1
 MODEL_BASE_URL=https://github.com/doda25-team12/model-service/releases/download
 ```
+
+---
+
+# Docker Compose Deployment
 
 ## Configuration
 
@@ -233,6 +251,209 @@ Monitor container resource consumption:
 ```bash
 docker stats
 ```
+
+---
+
+# Kubernetes Deployment
+
+The SMS Checker application can be deployed to Kubernetes using either raw manifests or a Helm chart. This section provides a quickstart guide. For comprehensive deployment instructions, see **[KUBERNETES-DEPLOYMENT.md](KUBERNETES-DEPLOYMENT.md)**.
+
+## Quick Start - Kubernetes Deployment
+
+### Prerequisites
+
+1. Kubernetes cluster running (see [Kubernetes Cluster Setup](#kubernetes-cluster-setup) below)
+2. kubectl configured
+3. Helm 3.0+ (for Helm deployment)
+4. Model files prepared
+
+### Step 1: Prepare Shared Storage
+
+The Kubernetes deployment uses VirtualBox shared folders for model storage across all pods.
+
+```bash
+# Run the setup script
+cd operation
+./scripts/setup-shared-storage.sh
+
+# Copy or train model files to k8s-models/
+# See "Preparing Model Files" section above for training instructions
+```
+
+### Step 2: Deploy Using Helm (Recommended)
+
+```bash
+# Install with default values
+helm install sms-checker ./helm-chart/sms-checker
+
+# Or with custom configuration
+helm install sms-checker ./helm-chart/sms-checker \
+  --set modelService.model.version=0.0.1 \
+  --set appService.replicaCount=3
+```
+
+### Step 3: Deploy Using Raw Manifests (Alternative)
+
+```bash
+# Deploy all resources
+kubectl apply -f k8s/config/namespace.yaml
+kubectl apply -f k8s/storage/persistent-volume.yaml
+kubectl apply -f k8s/config/configmap.yaml
+kubectl apply -f k8s/config/secret.yaml
+kubectl apply -f k8s/model-service/
+kubectl apply -f k8s/app-service/
+kubectl apply -f k8s/ingress/nginx-ingress.yaml
+```
+
+### Step 4: Access the Application
+
+```bash
+# Add hostname to /etc/hosts
+sudo sh -c 'echo "192.168.56.95 sms-checker.local" >> /etc/hosts'
+
+# Access in browser
+open http://sms-checker.local/sms/
+```
+
+## Kubernetes Features
+
+The Kubernetes deployment includes:
+
+### Resource Types
+
+- **Deployments**: Stateless application deployments with configurable replicas
+  - `app-service`: Frontend deployment (default 2 replicas)
+  - `model-service`: Backend ML service deployment (default 2 replicas)
+- **Services**: ClusterIP services for internal communication
+- **Ingress**: External access via Nginx Ingress Controller or Istio Gateway
+- **ConfigMaps**: Non-sensitive configuration (ports, URLs, model version)
+- **Secrets**: Sensitive data with placeholder values (registry credentials, tokens)
+- **PersistentVolume/PVC**: Shared storage using VirtualBox shared folders
+
+### Helm Chart
+
+The Helm chart (`helm-chart/sms-checker/`) provides:
+
+- Fully templated Kubernetes manifests
+- Customizable via `values.yaml`
+- Placeholder secrets that can be overridden during installation
+- Support for multiple ingress options (Nginx/Istio)
+- Flexible storage configuration
+
+Key Helm values:
+
+```yaml
+# Example custom values
+appService:
+  replicaCount: 3
+  image:
+    tag: "v1.0.0"
+
+modelService:
+  replicaCount: 2
+  model:
+    version: "0.0.1"
+
+ingress:
+  nginx:
+    enabled: true
+    host: sms-checker.local
+
+storage:
+  hostPath: /mnt/shared-models
+```
+
+### Secrets Management
+
+**IMPORTANT**: Secrets should never be committed to version control!
+
+Override placeholder secrets during installation:
+
+```bash
+# Using command-line flags
+helm install sms-checker ./helm-chart/sms-checker \
+  --set secrets.registry.username="actual-username" \
+  --set secrets.registry.token="actual-token"
+
+# Using a separate secrets file (add to .gitignore!)
+helm install sms-checker ./helm-chart/sms-checker \
+  -f custom-values.yaml \
+  -f secrets.yaml
+```
+
+### Shared Storage with VirtualBox
+
+The deployment uses VirtualBox shared folders to provide ReadWriteMany storage across all nodes:
+
+1. **Host Path**: `operation/k8s-models/` (on your machine)
+2. **VM Mount Point**: `/mnt/shared-models` (on all Vagrant VMs)
+3. **Pod Mount**: `/models` (read-only) and `/root/sms/output` (read-write)
+
+This allows:
+- All pods to access the same model files
+- Model updates without redeploying pods
+- Consistent storage across cluster nodes
+
+## Kubernetes Management
+
+### Viewing Status
+
+```bash
+# Check all resources
+kubectl get all -n sms-checker
+
+# Watch pods
+kubectl get pods -n sms-checker -w
+
+# Check logs
+kubectl logs -f deployment/app-service -n sms-checker
+kubectl logs -f deployment/model-service -n sms-checker
+```
+
+### Scaling
+
+```bash
+# Scale deployments
+kubectl scale deployment/app-service --replicas=5 -n sms-checker
+kubectl scale deployment/model-service --replicas=3 -n sms-checker
+
+# Using Helm
+helm upgrade sms-checker ./helm-chart/sms-checker \
+  --set appService.replicaCount=5 \
+  --set modelService.replicaCount=3
+```
+
+### Updating Configuration
+
+```bash
+# Edit ConfigMap
+kubectl edit configmap sms-checker-config -n sms-checker
+
+# Restart pods to pick up changes
+kubectl rollout restart deployment/app-service -n sms-checker
+kubectl rollout restart deployment/model-service -n sms-checker
+```
+
+### Uninstalling
+
+```bash
+# Using Helm
+helm uninstall sms-checker
+kubectl delete namespace sms-checker
+kubectl delete pv model-storage-pv
+
+# Using raw manifests
+kubectl delete namespace sms-checker
+kubectl delete pv model-storage-pv
+```
+
+## Detailed Documentation
+
+For comprehensive deployment instructions, troubleshooting, and advanced topics, see:
+
+📖 **[KUBERNETES-DEPLOYMENT.md](KUBERNETES-DEPLOYMENT.md)** - Complete Kubernetes deployment guide
+
+---
 
 ## Kubernetes Cluster Setup
 

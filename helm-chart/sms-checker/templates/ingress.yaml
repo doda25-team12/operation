@@ -1,0 +1,28 @@
+{{- if .Values.ingress.nginx.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: sms-checker-ingress
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: sms-checker
+  annotations:
+    {{- toYaml .Values.ingress.nginx.annotations | nindent 4 }}
+spec:
+  ingressClassName: {{ .Values.ingress.nginx.className }}
+  {{- if .Values.ingress.nginx.tls }}
+  tls:
+    {{- toYaml .Values.ingress.nginx.tls | nindent 4 }}
+  {{- end }}
+  rules:
+  - host: {{ .Values.ingress.nginx.host }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: {{ .Values.appService.name }}
+            port:
+              number: {{ .Values.appService.port }}
+{{- end }}

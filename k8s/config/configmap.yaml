@@ -1,0 +1,18 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sms-checker-config
+  namespace: sms-checker
+  labels:
+    app: sms-checker
+data:
+  # Application configuration
+  APP_INTERNAL_PORT: "8080"
+  MODEL_INTERNAL_PORT: "8081"
+  MODEL_SERVICE_URL: "http://model-service:8081"
+
+  # Model service configuration
+  MODEL_VERSION: "0.0.1"
+
+  # Optional: Model download URL (leave empty if using mounted storage)
+  MODEL_BASE_URL: ""

@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: sms-checker-config
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: sms-checker
+data:
+  APP_INTERNAL_PORT: {{ .Values.config.appInternalPort | quote }}
+  MODEL_INTERNAL_PORT: {{ .Values.config.modelInternalPort | quote }}
+  {{- if .Values.config.modelServiceUrl }}
+  MODEL_SERVICE_URL: {{ .Values.config.modelServiceUrl | quote }}
+  {{- else }}
+  MODEL_SERVICE_URL: "http://{{ .Values.modelService.name }}:{{ .Values.modelService.port }}"
+  {{- end }}
+  MODEL_VERSION: {{ .Values.modelService.model.version | quote }}
+  MODEL_BASE_URL: {{ .Values.modelService.model.baseUrl | quote }}

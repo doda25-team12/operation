@@ -1,0 +1,63 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-service
+  namespace: sms-checker
+  labels:
+    app: sms-checker
+    component: app-service
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: sms-checker
+      component: app-service
+  template:
+    metadata:
+      labels:
+        app: sms-checker
+        component: app-service
+    spec:
+      containers:
+      - name: app-service
+        image: ghcr.io/doda25-team12/app:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 8080
+          name: http
+          protocol: TCP
+        env:
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: sms-checker-config
+              key: APP_INTERNAL_PORT
+        - name: MODEL_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: sms-checker-config
+              key: MODEL_SERVICE_URL
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+        livenessProbe:
+          httpGet:
+            path: /sms/
+            port: 8080
+          initialDelaySeconds: 30
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 3
+        readinessProbe:
+          httpGet:
+            path: /sms/
+            port: 8080
+          initialDelaySeconds: 10
+          periodSeconds: 5
+          timeoutSeconds: 3
+          failureThreshold: 3
+      restartPolicy: Always

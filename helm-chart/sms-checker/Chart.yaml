@@ -1,0 +1,17 @@
+apiVersion: v2
+name: sms-checker
+description: A Helm chart for SMS Spam Detection microservices application
+type: application
+version: 1.0.0
+appVersion: "latest"
+keywords:
+  - sms
+  - spam-detection
+  - machine-learning
+  - microservices
+maintainers:
+  - name: DODA25 Team 12
+home: https://github.com/doda25-team12
+sources:
+  - https://github.com/doda25-team12/app
+  - https://github.com/doda25-team12/model-service

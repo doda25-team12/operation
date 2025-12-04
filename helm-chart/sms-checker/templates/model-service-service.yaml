@@ -1,0 +1,19 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.modelService.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: sms-checker
+    component: {{ .Values.modelService.name }}
+spec:
+  type: {{ .Values.service.type }}
+  selector:
+    app: sms-checker
+    component: {{ .Values.modelService.name }}
+  ports:
+  - name: http
+    port: {{ .Values.modelService.port }}
+    targetPort: {{ .Values.modelService.port }}
+    protocol: TCP
+  sessionAffinity: {{ .Values.service.sessionAffinity }}

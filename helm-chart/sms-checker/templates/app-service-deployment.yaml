@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ .Values.appService.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    app: sms-checker
+    component: {{ .Values.appService.name }}
+spec:
+  replicas: {{ .Values.appService.replicaCount }}
+  selector:
+    matchLabels:
+      app: sms-checker
+      component: {{ .Values.appService.name }}
+  template:
+    metadata:
+      labels:
+        app: sms-checker
+        component: {{ .Values.appService.name }}
+    spec:
+      {{- if .Values.image.pullSecrets }}
+      imagePullSecrets:
+        {{- toYaml .Values.image.pullSecrets | nindent 8 }}
+      {{- end }}
+      containers:
+      - name: {{ .Values.appService.name }}
+        image: "{{ .Values.image.registry }}/{{ .Values.image.organization }}/{{ .Values.appService.image.repository }}:{{ .Values.appService.image.tag }}"
+        imagePullPolicy: {{ .Values.image.pullPolicy }}
+        ports:
+        - containerPort: {{ .Values.appService.port }}
+          name: http
+          protocol: TCP
+        env:
+        - name: PORT
+          valueFrom:
+            configMapKeyRef:
+              name: sms-checker-config
+              key: APP_INTERNAL_PORT
+        - name: MODEL_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: sms-checker-config
+              key: MODEL_SERVICE_URL
+        resources:
+          {{- toYaml .Values.appService.resources | nindent 10 }}
+        {{- if .Values.appService.livenessProbe.enabled }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.appService.livenessProbe.path }}
+            port: {{ .Values.appService.port }}
+          initialDelaySeconds: {{ .Values.appService.livenessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.appService.livenessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.appService.livenessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.appService.livenessProbe.failureThreshold }}
+        {{- end }}
+        {{- if .Values.appService.readinessProbe.enabled }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.appService.readinessProbe.path }}
+            port: {{ .Values.appService.port }}
+          initialDelaySeconds: {{ .Values.appService.readinessProbe.initialDelaySeconds }}
+          periodSeconds: {{ .Values.appService.readinessProbe.periodSeconds }}
+          timeoutSeconds: {{ .Values.appService.readinessProbe.timeoutSeconds }}
+          failureThreshold: {{ .Values.appService.readinessProbe.failureThreshold }}
+        {{- end }}
+      restartPolicy: Always
