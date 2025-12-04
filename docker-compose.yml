@@ -6,7 +6,7 @@ services:
     image: ghcr.io/${ORG_NAME}/model-service:${VERSION}
 
     environment:
-      - PORT=${MODEL_INTERNAL_PORT}
+      - MODEL_SERVICE_PORT=${MODEL_INTERNAL_PORT}
 
     # Inject the model file from host to container
     # We map the local './models' folder to '/models' inside the container
@@ -26,7 +26,7 @@ services:
       - "${HOST_PORT}:${APP_INTERNAL_PORT}"
 
     environment:
-      - PORT=${APP_INTERNAL_PORT}
+      - APP_PORT=${APP_INTERNAL_PORT}
       - MODEL_SERVICE_URL=http://model-service:${MODEL_INTERNAL_PORT}
 
     depends_on:
