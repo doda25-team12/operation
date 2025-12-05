@@ -1,0 +1,28 @@
+{{- if and .Values.monitoring.enabled .Values.monitoring.modelService.enabled .Values.modelService.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: ServiceMonitor
+metadata:
+  name: {{ .Values.modelService.name }}-monitor
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "sms-spam-detector.modelService.labels" . | nindent 4 }}
+    release: {{ .Release.Name }}
+spec:
+  selector:
+    matchLabels:
+      {{- include "sms-spam-detector.modelService.selectorLabels" . | nindent 6 }}
+  namespaceSelector:
+    matchNames:
+      - {{ .Values.namespace }}
+  endpoints:
+    - port: {{ .Values.monitoring.modelService.port }}
+      path: {{ .Values.monitoring.modelService.path }}
+      interval: {{ .Values.monitoring.modelService.interval }}
+      scrapeTimeout: {{ .Values.monitoring.modelService.scrapeTimeout }}
+      honorLabels: true
+      metricRelabelings:
+        - sourceLabels: [__name__]
+          action: keep
+          regex: (sms_.*|model_.*|prediction_.*|python_.*)
+{{- end }}
+

@@ -8,5 +8,14 @@ keywords:
   - sms
   - spam-detection
   - machine-learning
+  - monitoring
+  - prometheus
 maintainers:
   - name: DODA Team 12
+
+dependencies:
+  - name: kube-prometheus-stack
+    version: "65.1.1"
+    repository: "https://prometheus-community.github.io/helm-charts"
+    condition: monitoring.enabled
+    alias: prometheus

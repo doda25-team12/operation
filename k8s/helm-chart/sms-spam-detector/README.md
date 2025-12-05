@@ -1,6 +1,6 @@
 # SMS Spam Detector - Helm Chart
 
-This Helm chart deploys the SMS Spam Detection application to Kubernetes with both Nginx Ingress and Istio service mesh support.
+This Helm chart deploys the SMS Spam Detection application to Kubernetes with both Nginx Ingress and Istio service mesh support, along with Prometheus monitoring.
 
 ## Architecture
 
@@ -9,6 +9,8 @@ This Helm chart deploys the SMS Spam Detection application to Kubernetes with bo
 - **Storage**: VirtualBox shared folder for ML model files
 - **Ingress**: Nginx Ingress Controller for external access
 - **Service Mesh**: Istio for mTLS and advanced traffic management
+- **Monitoring**: Prometheus via kube-prometheus-stack
+- **Alerting**: AlertManager for notification on metrics thresholds
 
 ## Prerequisites
 
@@ -332,6 +334,79 @@ cp /path/to/model.joblib /Users/atharva/DODA/operation/models/
 vagrant reload
 ```
 
+## Monitoring and Observability
+
+### Overview
+
+This Helm chart includes a monitoring stack powered by the **kube-prometheus-stack**:
+
+- **Prometheus**: Metrics collection and storage
+- **AlertManager**: Alerting and notifications
+- **ServiceMonitors**: Automatic service discovery and scraping
+
+> **Note**: Grafana dashboards will be configured separately by a teammate.
+
+### Accessing Monitoring UIs
+
+After installation, add the following entries to `/etc/hosts`:
+
+```bash
+echo "192.168.56.95 prometheus.local" | sudo tee -a /etc/hosts
+echo "192.168.56.95 alertmanager.local" | sudo tee -a /etc/hosts
+```
+
+Access the UIs:
+- **Prometheus**: http://prometheus.local
+- **AlertManager**: http://alertmanager.local
+
+### Application Metrics
+
+Both services expose custom metrics at their `/metrics` endpoints:
+
+**App Service (Frontend) Metrics:**
+| Metric | Type | Description |
+|--------|------|-------------|
+| `sms_classification_requests_total` | Counter | Total number of SMS classification requests by result (spam/ham) |
+| `sms_active_users` | Gauge | Current number of active user sessions |
+| `sms_classification_latency_seconds` | Histogram | Response time distribution for classification requests |
+
+**Model Service (Backend) Metrics:**
+| Metric | Type | Description |
+|--------|------|-------------|
+| `model_predictions_total` | Counter | Total predictions made, labeled by result |
+| `model_confidence_score` | Gauge | Latest prediction confidence score |
+| `model_inference_duration_seconds` | Histogram | ML model inference time distribution |
+
+### Verifying Metrics
+
+Check that Prometheus is scraping the services:
+
+```bash
+# Access metrics directly
+curl http://sms.local/metrics
+
+# Check ServiceMonitor status in Prometheus UI
+# Navigate to Status -> Targets in Prometheus
+```
+
+### Helm Dependency Update
+
+Before installing, update Helm dependencies:
+
+```bash
+cd k8s/helm-chart/sms-spam-detector
+helm dependency update
+helm dependency build
+```
+
+### Disabling Monitoring
+
+To install without the monitoring stack:
+
+```bash
+helm install sms-detector sms-spam-detector --set monitoring.enabled=false
+```
+
 ## Advanced Features
 
 ### Manual Scaling
@@ -353,6 +428,14 @@ kubectl autoscale deployment app-service -n sms-spam-detection --cpu-percent=70 
 ```bash
 kubectl port-forward -n sms-spam-detection svc/app-service 8080:8080
 kubectl port-forward -n sms-spam-detection svc/model-service 8081:8081
+```
+
+### Prometheus Port Forwarding
+
+If Ingress is not working, access Prometheus directly:
+
+```bash
+kubectl port-forward -n sms-spam-detection svc/sms-detector-prometheus-prometheus 9090:9090
 ```
 
 ## Migration from Docker Compose

@@ -115,3 +115,115 @@ secrets:
   #   --docker-password=YOUR_PAT --docker-email=YOUR_EMAIL \
   #   --dry-run=client -o yaml | grep '\.dockerconfigjson:' | awk '{print $2}'
   dockerConfigJson: "PLACEHOLDER_REPLACE_WITH_BASE64_DOCKER_CONFIG"
+
+# ========================================
+# Monitoring Configuration (Prometheus)
+# ========================================
+monitoring:
+  enabled: true
+  
+  # ServiceMonitor configuration for app-service
+  appService:
+    enabled: true
+    path: /metrics
+    port: http
+    interval: 15s
+    scrapeTimeout: 10s
+    
+  # ServiceMonitor configuration for model-service
+  modelService:
+    enabled: true
+    path: /metrics
+    port: http
+    interval: 15s
+    scrapeTimeout: 10s
+
+# ========================================
+# Prometheus Stack Configuration
+# ========================================
+prometheus:
+  # Enable the Prometheus Operator
+  prometheusOperator:
+    enabled: true
+    
+  # Prometheus server configuration
+  prometheus:
+    enabled: true
+    prometheusSpec:
+      # Namespace selector for ServiceMonitors
+      serviceMonitorSelectorNilUsesHelmValues: false
+      serviceMonitorSelector: {}
+      serviceMonitorNamespaceSelector: {}
+      # Retention period for metrics
+      retention: 10d
+      # Resource limits
+      resources:
+        requests:
+          memory: 400Mi
+          cpu: 200m
+        limits:
+          memory: 2Gi
+          cpu: 1000m
+      # Storage configuration
+      storageSpec:
+        volumeClaimTemplate:
+          spec:
+            accessModes: ["ReadWriteOnce"]
+            resources:
+              requests:
+                storage: 10Gi
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - prometheus.local
+      paths:
+        - /
+      annotations:
+        nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  
+  grafana:
+    enabled: false
+  
+  # AlertManager configuration
+  alertmanager:
+    enabled: true
+    alertmanagerSpec:
+      resources:
+        requests:
+          memory: 64Mi
+          cpu: 50m
+        limits:
+          memory: 256Mi
+          cpu: 200m
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      hosts:
+        - alertmanager.local
+      paths:
+        - /
+      annotations:
+        nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  
+  # Disable components we don't need
+  kubeStateMetrics:
+    enabled: true
+  nodeExporter:
+    enabled: true
+  kubeApiServer:
+    enabled: false
+  kubelet:
+    enabled: false
+  kubeControllerManager:
+    enabled: false
+  coreDns:
+    enabled: false
+  kubeDns:
+    enabled: false
+  kubeEtcd:
+    enabled: false
+  kubeScheduler:
+    enabled: false
+  kubeProxy:
+    enabled: false
