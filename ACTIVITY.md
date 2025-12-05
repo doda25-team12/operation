@@ -5,6 +5,7 @@
 - Yuvraj Singh Pathania (6495044) : Worked on automating the container image release and making the containers flexible with the exposed ports
 - Maksym Ziemlewski (5530458): Created a Version-aware Library (f1) and f7: Docker Compose Operation
 - Stilyan Penchev (5749131): Worked and completeted The multi-stage and multi-architecture tasks.
+PR Links: https://github.com/doda25-team12/model-service/pull/6, 
 - Dragos Erhan (6450520): Worked and created the Dockerfile for frontend and backend and also make the dynamic version of the model.
 
 ## Week 2
