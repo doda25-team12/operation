@@ -32,3 +32,6 @@ Thumbs.db
 # Temporary files
 tmp/
 temp/
+
+# Helm chart dependencies (downloaded, not committed)
+k8s/helm-chart/*/charts/
