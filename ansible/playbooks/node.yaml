@@ -26,6 +26,31 @@
         - join
 
     # ==========================================
+    # SECTION 1.5: WAIT FOR CONTROLLER API SERVER
+    # ==========================================
+    - name: Wait for API server to be reachable from control node
+      shell: |
+        for i in {1..60}; do
+          if sudo nc -zw 1 localhost 6443 &>/dev/null; then
+            echo "API server is ready locally on controller"
+            exit 0
+          fi
+          echo "Waiting for API server to be ready... attempt $i/60"
+          sleep 5
+        done
+        echo "API server did not become ready in time"
+        exit 1
+      delegate_to: ctrl
+      delegate_facts: true
+      when: not kubelet_conf.stat.exists
+      tags:
+        - join
+      retries: 2
+      delay: 10
+      until: wait_api_local.rc == 0
+      register: wait_api_local
+
+    # ==========================================
     # SECTION 2: GET JOIN COMMAND FROM CONTROLLER
     # ==========================================
     - name: Generate join command on controller
@@ -51,6 +76,9 @@
       command: "{{ join_command.stdout }}"
       when: not kubelet_conf.stat.exists
       register: join_result
+      retries: 3
+      delay: 10
+      until: join_result is succeeded
       tags:
         - join
 
