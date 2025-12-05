@@ -25,7 +25,7 @@
 - Yuvraj Singh Pathania (6495044) : Worked on setting up prometheus and adding metrics endpoint to model service 
     - PR Link 1: https://github.com/doda25-team12/operation/pull/8
     - PR Link 2: https://github.com/doda25-team12/model-service/pull/10 
-
+- Andrei Paduraru (5774489): Bug fixing for AMD64 processors. PR Link: https://github.com/doda25-team12/operation/pull/7
     
 =======
 >>>>>>> Stashed changes
