@@ -5,6 +5,7 @@
 - Yuvraj Singh Pathania (6495044) : Worked on automating the container image release and making the containers flexible with the exposed ports
 - Maksym Ziemlewski (5530458): Created a Version-aware Library (f1) and f7: Docker Compose Operation
 - Stilyan Penchev (5749131): Worked and completeted The multi-stage and multi-architecture tasks.
+- Dragos Erhan (6450520): Worked and created the Dockerfile for frontend and backend and also make the dynamic version of the model.
 
 ## Week 2
 - Atharva Dagaonkar (6406947): Completed basic VM setup, networking, forwarding, setup of Kubernetes controller and helm installation (Step 1 - 17). Installed Kubernetes dashboard, ingress, metalLB and Istio. (Steps 20-23). PR Links: https://github.com/doda25-team12/operation/pull/3, https://github.com/doda25-team12/operation/pull/5
@@ -14,8 +15,10 @@
 
 - Maksym Ziemlewski (5530458): Cooperated in setting up step 1.4, Finalizing the Cluster Setup
 - Stilyan Penchev (5749131): I worked with Andrei on 1.4. We did encounter a lot of issues connected to the WSL setup.
+- Erhan Dragos (6450520): Worked with on solving 1.4. However, ansible did had issues with wsl.
 - Andrei Paduraru (5774489): I mainly worked on troubleshooting and finding solutions for Windows users. 
 
+<<<<<<< Updated upstream
 
 ## Week 3
 - Atharva Dagaonkar (6406947): Worked on migration from Docker to Kubernetes. PR Link: https://github.com/doda25-team12/operation/pull/6
@@ -24,3 +27,5 @@
     - PR Link 2: https://github.com/doda25-team12/model-service/pull/10 
 
     
+=======
+>>>>>>> Stashed changes
