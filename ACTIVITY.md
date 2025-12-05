@@ -9,6 +9,16 @@
 ## Week 2
 - Atharva Dagaonkar (6406947): Completed basic VM setup, networking, forwarding, setup of Kubernetes controller and helm installation (Step 1 - 17). Installed Kubernetes dashboard, ingress, metalLB and Istio. (Steps 20-23).
 - Yuvraj Singh Pathania (6495044) : Worked on setting up the kubernetes workers (Section 1.3, Steps 18-19): implemented worker node join automation in node.yaml using kubeadm token delegation, fixed SSH keys path in general.yaml, added SSH public key for team requirement, and verified successful cluster join for all worker nodes
+    
+    - PR Link : https://github.com/doda25-team12/operation/pull/4
+
 - Maksym Ziemlewski (5530458): Cooperated in setting up step 1.4, Finalizing the Cluster Setup
 - Stilyan Penchev (5749131): I worked with Andrei on 1.4. We did encounter a lot of issues connected to the WSL setup.
 - Andrei Paduraru (5774489): I mainly worked on troubleshooting and finding solutions for Windows users. 
+
+## Week 3
+- Yuvraj Singh Pathania (6495044) : Worked on setting up prometheus and adding metrics endpoint to model service 
+    - PR Link 1: https://github.com/doda25-team12/operation/pull/8
+    - PR Link 2: https://github.com/doda25-team12/model-service/pull/10 
+
+    
