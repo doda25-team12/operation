@@ -1,0 +1,24 @@
+{{- if .Values.persistence.enabled }}
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: model-files-pv
+  labels:
+    {{- include "sms-spam-detector.labels" . | nindent 4 }}
+    app: {{ .Values.modelService.name }}
+spec:
+  capacity:
+    storage: {{ .Values.persistence.size }}
+  accessModes:
+    - {{ .Values.persistence.accessMode }}
+  persistentVolumeReclaimPolicy: {{ .Values.persistence.reclaimPolicy }}
+  {{- if eq .Values.persistence.storageType "hostPath" }}
+  hostPath:
+    path: {{ .Values.persistence.hostPath.path }}
+    type: Directory
+  {{- else if eq .Values.persistence.storageType "nfs" }}
+  nfs:
+    server: {{ .Values.persistence.nfs.server }}
+    path: {{ .Values.persistence.nfs.path }}
+  {{- end }}
+{{- end }}

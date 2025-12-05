@@ -1,0 +1,42 @@
+{{- if .Values.istio.enabled }}
+---
+apiVersion: networking.istio.io/v1beta1
+kind: Gateway
+metadata:
+  name: {{ .Values.istio.gateway.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "sms-spam-detector.labels" . | nindent 4 }}
+spec:
+  selector:
+    istio: ingressgateway
+  servers:
+  - port:
+      number: 80
+      name: http
+      protocol: HTTP
+    hosts:
+    - {{ .Values.istio.gateway.host | quote }}
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ .Values.istio.virtualService.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "sms-spam-detector.labels" . | nindent 4 }}
+spec:
+  hosts:
+  - {{ .Values.istio.gateway.host | quote }}
+  gateways:
+  - {{ .Values.istio.gateway.name }}
+  http:
+  - match:
+    - uri:
+        prefix: "/"
+    route:
+    - destination:
+        host: {{ .Values.appService.name }}
+        port:
+          number: {{ .Values.appService.service.port }}
+{{- end }}

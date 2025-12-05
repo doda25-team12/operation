@@ -1,0 +1,18 @@
+{{- if .Values.appService.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ .Values.appService.name }}
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "sms-spam-detector.appService.labels" . | nindent 4 }}
+spec:
+  type: {{ .Values.appService.service.type }}
+  ports:
+  - port: {{ .Values.appService.service.port }}
+    targetPort: {{ .Values.appService.service.port }}
+    protocol: TCP
+    name: http
+  selector:
+    {{- include "sms-spam-detector.appService.selectorLabels" . | nindent 4 }}
+{{- end }}

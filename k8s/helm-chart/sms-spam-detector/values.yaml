@@ -1,0 +1,117 @@
+# Global settings
+namespace: sms-spam-detection
+
+# Container registry settings
+imageRegistry: ghcr.io
+imageOrganization: doda25-team12
+imagePullPolicy: Always
+
+# Image pull secrets (for private registries)
+imagePullSecrets:
+  enabled: true
+  name: container-registry-secret
+
+# Model Service configuration
+modelService:
+  enabled: true
+  name: model-service
+  image:
+    repository: model-service
+    tag: latest
+  replicas: 2
+  service:
+    type: ClusterIP
+    port: 8081
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+  livenessProbe:
+    enabled: true
+    path: /apidocs
+    initialDelaySeconds: 30
+    periodSeconds: 10
+  readinessProbe:
+    enabled: true
+    path: /apidocs
+    initialDelaySeconds: 10
+    periodSeconds: 5
+
+# App Service configuration
+appService:
+  enabled: true
+  name: app-service
+  image:
+    repository: app
+    tag: latest
+  replicas: 2
+  service:
+    type: ClusterIP
+    port: 8080
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+  livenessProbe:
+    enabled: true
+    path: /sms
+    initialDelaySeconds: 45
+    periodSeconds: 10
+  readinessProbe:
+    enabled: true
+    path: /sms
+    initialDelaySeconds: 30
+    periodSeconds: 5
+
+# Persistent storage for ML models
+persistence:
+  enabled: true
+  storageType: hostPath  # Options: hostPath, nfs
+  hostPath:
+    path: /mnt/shared/models
+  accessMode: ReadOnlyMany
+  size: 1Gi
+  reclaimPolicy: Retain
+
+# Ingress configuration
+ingress:
+  enabled: true
+  className: nginx
+  host: sms.local
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    nginx.ingress.kubernetes.io/rewrite-target: /
+  tls:
+    enabled: false
+    secretName: ""
+
+# Istio configuration
+istio:
+  enabled: true
+  gateway:
+    name: sms-gateway
+    host: sms-istio.local
+  virtualService:
+    name: sms-virtualservice
+
+# ConfigMap data
+config:
+  appInternalPort: "8080"
+  modelInternalPort: "8081"
+  modelServiceUrl: "http://model-service:8081"
+
+# Secret placeholders
+secrets:
+  # Docker registry credentials (base64-encoded .dockerconfigjson)
+  # Replace with actual credentials before installation
+  # Generate with: kubectl create secret docker-registry temp-secret \
+  #   --docker-server=ghcr.io --docker-username=YOUR_USERNAME \
+  #   --docker-password=YOUR_PAT --docker-email=YOUR_EMAIL \
+  #   --dry-run=client -o yaml | grep '\.dockerconfigjson:' | awk '{print $2}'
+  dockerConfigJson: "PLACEHOLDER_REPLACE_WITH_BASE64_DOCKER_CONFIG"
