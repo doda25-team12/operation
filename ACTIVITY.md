@@ -6,7 +6,7 @@
 - Maksym Ziemlewski (5530458): Created a Version-aware Library (f1) and f7: Docker Compose Operation
 - Stilyan Penchev (5749131): Worked and completeted The multi-stage and multi-architecture tasks.
 PR Links: https://github.com/doda25-team12/model-service/pull/6, 
-- Dragos Erhan (6450520): Worked and created the Dockerfile for frontend and backend and also make the dynamic version of the model.
+- Dragos Erhan (6450520): Worked and created the Dockerfile for frontend and backend and also make the dynamic version of the model. PR Links: https://github.com/doda25-team12/app/pull/1, https://github.com/doda25-team12/model-service/pull/2
 - Andrei Paduraru (5775589): F2+F11
 PR Link: https://github.com/doda25-team12/lib-version/pull/3/commits
 
@@ -18,7 +18,7 @@ PR Link: https://github.com/doda25-team12/lib-version/pull/3/commits
 
 - Maksym Ziemlewski (5530458): Cooperated in setting up step 1.4, Finalizing the Cluster Setup
 - Stilyan Penchev (5749131): I worked with Andrei on 1.4. We did encounter a lot of issues connected to the WSL setup.
-- Erhan Dragos (6450520): Worked with on solving 1.4. However, ansible did had issues with wsl.
+- Erhan Dragos (6450520): Worked with on solving 1.4. However, ansible did had issues with wsl. And while trying to figure out how to solve the issue, the task was already finished.
 - Andrei Paduraru (5774489): I mainly worked on troubleshooting and finding solutions for Windows users. 
 
 ## Week 3
