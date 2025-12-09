@@ -7,6 +7,8 @@
 - Stilyan Penchev (5749131): Worked and completeted The multi-stage and multi-architecture tasks.
 PR Links: https://github.com/doda25-team12/model-service/pull/6, 
 - Dragos Erhan (6450520): Worked and created the Dockerfile for frontend and backend and also make the dynamic version of the model.
+- Andrei Paduraru (5775589): F2+F11
+PR Link: https://github.com/doda25-team12/lib-version/pull/3/commits
 
 ## Week 2
 - Atharva Dagaonkar (6406947): Completed basic VM setup, networking, forwarding, setup of Kubernetes controller and helm installation (Step 1 - 17). Installed Kubernetes dashboard, ingress, metalLB and Istio. (Steps 20-23). PR Links: https://github.com/doda25-team12/operation/pull/3, https://github.com/doda25-team12/operation/pull/5
