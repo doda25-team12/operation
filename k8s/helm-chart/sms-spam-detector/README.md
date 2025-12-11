@@ -9,7 +9,7 @@ This Helm chart deploys the SMS Spam Detection application to Kubernetes with bo
 - **Storage**: VirtualBox shared folder for ML model files
 - **Ingress**: Nginx Ingress Controller for external access
 - **Service Mesh**: Istio for mTLS and advanced traffic management
-- **Monitoring**: Prometheus via kube-prometheus-stack
+- **Monitoring**: Prometheus via kube-prometheus-stack with ServiceMonitors for both services
 - **Alerting**: AlertManager for notification on metrics thresholds
 
 ## Prerequisites
