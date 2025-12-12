@@ -71,3 +71,4 @@ helm uninstall sms-detector -n sms-spam-detection
 - If pulls still fail, re-create the secret with a PAT that has `read:packages`.
 - If scheduling is Pending, increase cluster resources or lower requests in `values.yaml`.
 
+
