@@ -8,7 +8,7 @@ imagePullPolicy: Always
 
 # Image pull secrets (for private registries)
 imagePullSecrets:
-  enabled: true
+  enabled: false
   name: container-registry-secret
 
 # Model Service configuration

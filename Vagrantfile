@@ -37,7 +37,7 @@ Vagrant.configure("2") do |config|
     ctrl.vm.hostname = "ctrl"
 
     # Host-only network with fixed IP
-    ctrl.vm.network "private_network", ip: CTRL_IP, virtualbox__intnet: "k8s-network"
+    ctrl.vm.network "private_network", ip: CTRL_IP
 
     # Shared folder for ML model files
     ctrl.vm.synced_folder "#{File.dirname(__FILE__)}/models",
@@ -92,7 +92,7 @@ Vagrant.configure("2") do |config|
       worker_ip = "#{NETWORK_PREFIX}.#{WORKER_IP_START + i - 1}"
 
       # Host-only network with fixed IP
-      node.vm.network "private_network", ip: worker_ip, virtualbox__intnet: "k8s-network"
+      node.vm.network "private_network", ip: worker_ip
 
       # Shared folder for ML model files
       node.vm.synced_folder "#{File.dirname(__FILE__)}/models",
