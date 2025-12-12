@@ -9,7 +9,7 @@ metadata:
     {{- include "sms-spam-detector.labels" . | nindent 4 }}
 spec:
   selector:
-    istio: ingressgateway
+    {{- toYaml .Values.istio.gateway.selectorLabels | nindent 4 }}
   servers:
   - port:
       number: 80
@@ -31,12 +31,82 @@ spec:
   gateways:
   - {{ .Values.istio.gateway.name }}
   http:
-  - match:
+  {{- $sticky := .Values.istio.traffic.sticky }}
+  {{- $cookieName := $sticky.cookieName }}
+  {{- $stableCookie := $sticky.stableCookieValue }}
+  {{- $canaryCookie := $sticky.canaryCookieValue }}
+  {{- $canaryEnabled := and .Values.appService.canary.enabled (gt (int .Values.istio.traffic.app.canaryWeight) 0) }}
+  {{- if and $sticky.enabled $canaryEnabled }}
+  - name: canary-cookie
+    match:
+    - headers:
+        cookie:
+          regex: ".*{{ $cookieName }}={{ $canaryCookie }}.*"
+    headers:
+      response:
+        add:
+          Set-Cookie: "{{ $cookieName }}={{ $canaryCookie }}; Path=/"
+    route:
+    - destination:
+        host: {{ .Values.appService.name }}
+        subset: {{ .Values.appService.canary.versionLabel }}
+  {{- end }}
+  {{- if $sticky.enabled }}
+  - name: stable-cookie
+    match:
+    - headers:
+        cookie:
+          regex: ".*{{ $cookieName }}={{ $stableCookie }}.*"
+    headers:
+      response:
+        add:
+          Set-Cookie: "{{ $cookieName }}={{ $stableCookie }}; Path=/"
+    route:
+    - destination:
+        host: {{ .Values.appService.name }}
+        subset: {{ .Values.appService.versionLabel }}
+  {{- end }}
+  - name: weighted-canary
+    match:
     - uri:
         prefix: "/"
     route:
     - destination:
         host: {{ .Values.appService.name }}
-        port:
-          number: {{ .Values.appService.service.port }}
+        subset: {{ .Values.appService.versionLabel }}
+      weight: {{ if $canaryEnabled }}{{ .Values.istio.traffic.app.stableWeight }}{{ else }}100{{ end }}
+    {{- if $canaryEnabled }}
+    - destination:
+        host: {{ .Values.appService.name }}
+        subset: {{ .Values.appService.canary.versionLabel }}
+      weight: {{ .Values.istio.traffic.app.canaryWeight }}
+    {{- end }}
+---
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata:
+  name: {{ .Values.modelService.name }}-vs
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "sms-spam-detector.modelService.labels" . | nindent 4 }}
+spec:
+  hosts:
+  - {{ .Values.modelService.name }}
+  http:
+  {{- if .Values.modelService.canary.enabled }}
+  - name: model-canary-pairing
+    match:
+    - sourceLabels:
+        app: {{ .Values.appService.name }}
+        version: {{ .Values.appService.canary.versionLabel }}
+    route:
+    - destination:
+        host: {{ .Values.modelService.name }}
+        subset: {{ .Values.modelService.canary.versionLabel }}
+  {{- end }}
+  - name: model-stable
+    route:
+    - destination:
+        host: {{ .Values.modelService.name }}
+        subset: {{ .Values.modelService.versionLabel }}
 {{- end }}
