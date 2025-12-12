@@ -39,3 +39,4 @@ PR Link: https://github.com/doda25-team12/lib-version/pull/3/commits
     - PR Link : https://github.com/doda25-team12/operation/pull/13
 - Stilyan Penchev (5749131): (Assignment A3) I added ServiceMonitor helm chart template to make implementing alerting with Prometheus easier.
 PR Link: https://github.com/doda25-team12/operation/pull/11
+- Andrei Paduraru (5774489): More bugfixing for Ubuntu. PR: https://github.com/doda25-team12/operation/pull/12
