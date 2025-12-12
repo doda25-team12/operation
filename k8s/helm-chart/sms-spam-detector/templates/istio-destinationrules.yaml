@@ -1,0 +1,61 @@
+{{- if .Values.istio.enabled }}
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: {{ .Values.appService.name }}-dr
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "sms-spam-detector.appService.labels" . | nindent 4 }}
+spec:
+  host: {{ .Values.appService.name }}
+  trafficPolicy:
+    {{- if .Values.istio.traffic.sticky.enabled }}
+    loadBalancer:
+      consistentHash:
+        httpCookie:
+          name: {{ .Values.istio.traffic.sticky.cookieName }}
+          ttl: 0s
+    {{- end }}
+  subsets:
+    - name: {{ .Values.appService.versionLabel }}
+      labels:
+        app: {{ .Values.appService.name }}
+        version: {{ .Values.appService.versionLabel }}
+    {{- if and .Values.appService.canary.enabled .Values.appService.canary.versionLabel }}
+    - name: {{ .Values.appService.canary.versionLabel }}
+      labels:
+        app: {{ .Values.appService.name }}
+        version: {{ .Values.appService.canary.versionLabel }}
+    {{- end }}
+---
+apiVersion: networking.istio.io/v1beta1
+kind: DestinationRule
+metadata:
+  name: {{ .Values.modelService.name }}-dr
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "sms-spam-detector.modelService.labels" . | nindent 4 }}
+spec:
+  host: {{ .Values.modelService.name }}
+  trafficPolicy:
+    {{- if .Values.istio.traffic.sticky.enabled }}
+    loadBalancer:
+      consistentHash:
+        httpCookie:
+          name: {{ .Values.istio.traffic.sticky.cookieName }}
+          ttl: 0s
+    {{- end }}
+  subsets:
+    - name: {{ .Values.modelService.versionLabel }}
+      labels:
+        app: {{ .Values.modelService.name }}
+        version: {{ .Values.modelService.versionLabel }}
+    {{- if and .Values.modelService.canary.enabled .Values.modelService.canary.versionLabel }}
+    - name: {{ .Values.modelService.canary.versionLabel }}
+      labels:
+        app: {{ .Values.modelService.name }}
+        version: {{ .Values.modelService.canary.versionLabel }}
+    {{- end }}
+{{- end }}
+

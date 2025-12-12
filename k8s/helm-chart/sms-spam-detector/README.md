@@ -420,6 +420,27 @@ cp /path/to/model.joblib /Users/atharva/DODA/operation/models/
 vagrant reload
 ```
 
+## Istio Traffic Management (Canary)
+
+- **Gateway/Host**: The Istio Gateway name is configurable via `istio.gateway.name`, host via `istio.gateway.host`, and the selector labels via `istio.gateway.selectorLabels` (defaults to `istio: ingressgateway`). This allows installing into clusters with different ingress gateway names.
+- **Versions**: Stable pods carry `version: v1`; optional canary pods use `version: v2` (enable via `appService.canary.enabled=true` and `modelService.canary.enabled=true`).
+- **Routing**: The VirtualService splits traffic `90/10` between subsets by default (`istio.traffic.app.stableWeight/canaryWeight`). DestinationRules pair app/model subsets so `v2` app calls `v2` model.
+- **Sticky sessions**: When enabled (`istio.traffic.sticky.enabled`), requests containing `experiment=canary` or `experiment=stable` cookies are pinned to the respective subset. Example:
+  ```bash
+  # Canary user (pinned to v2)
+  curl -H "Host: sms-istio.local" --cookie "experiment=canary" http://192.168.56.96/
+  # Stable user (pinned to v1)
+  curl -H "Host: sms-istio.local" --cookie "experiment=stable" http://192.168.56.96/
+  ```
+- **Adjust weights**: Override at install time:
+  ```bash
+  helm upgrade --install sms-detector ./sms-spam-detector \
+    --set appService.canary.enabled=true \
+    --set modelService.canary.enabled=true \
+    --set istio.traffic.app.stableWeight=85 \
+    --set istio.traffic.app.canaryWeight=15
+  ```
+
 ## Monitoring and Observability
 
 ### Overview

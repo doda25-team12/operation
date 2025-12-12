@@ -1,30 +1,32 @@
-{{- if .Values.modelService.enabled }}
+{{- if and .Values.modelService.enabled .Values.modelService.canary.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ .Values.modelService.name }}
+  name: {{ .Values.modelService.canary.name }}
   namespace: {{ .Values.namespace }}
   labels:
     {{- include "sms-spam-detector.modelService.labels" . | nindent 4 }}
+    version: {{ .Values.modelService.canary.versionLabel | quote }}
 spec:
-  replicas: {{ .Values.modelService.replicas }}
+  replicas: {{ .Values.modelService.canary.replicas }}
   selector:
     matchLabels:
       {{- include "sms-spam-detector.modelService.selectorLabels" . | nindent 6 }}
+      version: {{ .Values.modelService.canary.versionLabel | quote }}
   template:
     metadata:
       labels:
         {{- include "sms-spam-detector.modelService.selectorLabels" . | nindent 8 }}
         component: backend
-        version: {{ .Values.modelService.versionLabel | quote }}
+        version: {{ .Values.modelService.canary.versionLabel | quote }}
     spec:
       {{- if .Values.imagePullSecrets.enabled }}
       imagePullSecrets:
         - name: {{ .Values.imagePullSecrets.name }}
       {{- end }}
       containers:
-      - name: {{ .Values.modelService.name }}
-        image: {{ include "sms-spam-detector.modelService.image" . }}
+      - name: {{ .Values.modelService.canary.name }}
+        image: {{ printf "%s/%s/%s:%s" .Values.imageRegistry .Values.imageOrganization .Values.modelService.canary.image.repository .Values.modelService.canary.image.tag }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
         ports:
         - containerPort: {{ .Values.modelService.service.port }}
@@ -67,3 +69,4 @@ spec:
           claimName: model-files-pvc
       {{- end }}
 {{- end }}
+

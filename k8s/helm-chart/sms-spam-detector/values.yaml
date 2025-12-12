@@ -15,10 +15,19 @@ imagePullSecrets:
 modelService:
   enabled: true
   name: model-service
+  versionLabel: v1
   image:
     repository: model-service
     tag: latest
   replicas: 2
+  canary:
+    enabled: false
+    name: model-service-canary
+    image:
+      repository: model-service
+      tag: latest
+    replicas: 1
+    versionLabel: v2
   service:
     type: ClusterIP
     port: 8081
@@ -44,10 +53,19 @@ modelService:
 appService:
   enabled: true
   name: app-service
+  versionLabel: v1
   image:
     repository: app
     tag: latest
   replicas: 2
+  canary:
+    enabled: false
+    name: app-service-canary
+    image:
+      repository: app
+      tag: latest
+    replicas: 1
+    versionLabel: v2
   service:
     type: ClusterIP
     port: 8080
@@ -97,8 +115,19 @@ istio:
   gateway:
     name: sms-gateway
     host: sms-istio.local
+    selectorLabels:
+      istio: ingressgateway
   virtualService:
     name: sms-virtualservice
+  traffic:
+    app:
+      stableWeight: 90
+      canaryWeight: 10
+    sticky:
+      enabled: true
+      cookieName: experiment
+      stableCookieValue: stable
+      canaryCookieValue: canary
 
 # ConfigMap data
 config:
@@ -164,7 +193,7 @@ prometheus:
         limits:
           memory: 2Gi
           cpu: 1000m
-      # Storage configuration
+      # Storage configuration`
       storageSpec:
         volumeClaimTemplate:
           spec:

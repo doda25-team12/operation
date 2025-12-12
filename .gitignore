@@ -35,3 +35,6 @@ temp/
 
 # Helm chart dependencies (downloaded, not committed)
 k8s/helm-chart/*/charts/
+
+# Local Istio binaries/addons (not committed)
+istio-*/
