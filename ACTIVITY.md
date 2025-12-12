@@ -33,6 +33,7 @@ PR Link: https://github.com/doda25-team12/lib-version/pull/3/commits
 - Andrei Paduraru (5774489): Bug fixing for AMD64 processors. PR Link: https://github.com/doda25-team12/operation/pull/7
 
 ## Week 4
+- Atharva Dagaonkar (6406947): Worked on fixing the Vagrantfile and assisted in debugging https://github.com/doda25-team12/operation/pull/14
 - Yuvraj Singh Pathania(6495044): Implemented Istio traffic management for A4 assignment: Gateway/VirtualService/DestinationRules with 90/10 canary routing and sticky sessions. Created canary deployments and deployment documentation.
     - PR Link : https://github.com/doda25-team12/operation/pull/13
 - Stilyan Penchev (5749131): Installed and setup linux on my personal computer to make running the project possible.
