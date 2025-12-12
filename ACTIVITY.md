@@ -31,3 +31,8 @@ PR Link: https://github.com/doda25-team12/lib-version/pull/3/commits
     - PR Link 1: https://github.com/doda25-team12/operation/pull/8
     - PR Link 2: https://github.com/doda25-team12/model-service/pull/10 
 - Andrei Paduraru (5774489): Bug fixing for AMD64 processors. PR Link: https://github.com/doda25-team12/operation/pull/7
+- Stilyan Penchev (5749131): Installed and setup linux on my personal computer to make running the project possible.
+
+## Week 4
+- Stilyan Penchev (5749131): (Assignment A3) I added ServiceMonitor helm chart template to make implementing alerting with Prometheus easier.
+PR Link: https://github.com/doda25-team12/operation/pull/11
