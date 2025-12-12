@@ -275,10 +275,12 @@ ansible-playbook -u vagrant \
   ansible/playbooks/finalization.yml
 
 # 4. Verify
+vagrant ssh ctrl
 kubectl get nodes
 kubectl get pods -A
 
 # 5. Access dashboard (Tunnel Method)
+exit
 vagrant ssh -- -L 8001:127.0.0.1:8001
 # Inside VM:
 sudo systemctl restart systemd-timesyncd
@@ -617,35 +619,149 @@ After setting up the Kubernetes cluster (see sections above), you can deploy the
 1.  **Kubernetes cluster running** (see "Kubernetes Cluster Setup" section)
 2.  **kubectl configured** with KUBECONFIG
 3.  **Helm installed**: [helm.sh/docs/intro/install](https://helm.sh/docs/intro/install/)
-4.  **VirtualBox shared folder** configured for model files
+4.  **VirtualBox shared folder** configured at `/mnt/shared/models`
 5.  **Model files** in `operation/models/` directory
 
-### Quick Start
+### Quick Start 
 
 ```bash
-# 1. Set kubeconfig
-export KUBECONFIG=/Users/atharva/DODA/operation/kubeconfig-fresh
+# 1. SSH to control node
+vagrant ssh ctrl
 
-# 2. Apply Vagrant changes for shared storage
-cd operation
-vagrant reload
+# 2. Copy Helm chart to control node (from host machine in another terminal)
+scp -r k8s/helm-chart/sms-spam-detector vagrant@127.0.0.1:~/helm-chart
 
-# 3. Verify shared folder on all nodes
+# 3. Create custom values file to disable image pull secrets (for testing)
+cat > ~/helm-install-values.yaml << 'EOF'
+imagePullSecrets:
+  enabled: false
+monitoring:
+  enabled: false
+prometheus:
+  prometheusOperator:
+    enabled: false
+  prometheus:
+    enabled: false
+  alertmanager:
+    enabled: false
+modelService:
+  replicas: 1
+appService:
+  replicas: 1
+EOF
+
+# 4. Add Helm repositories (if not already added)
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+# 5. Build Helm dependencies
+cd ~/helm-chart
+helm dependency build
+
+# 6. Lint the chart to validate
+helm lint .
+
+# 7. Perform dry-run to preview manifests
+helm install --dry-run sms-detector . -f ~/helm-install-values.yaml
+
+# 8. Install the Helm chart
+helm install sms-detector . -f ~/helm-install-values.yaml
+
+# 9. Verify installation
+helm list
+helm status sms-detector
+```
+
+### Cluster Verification Commands
+
+After installation, verify all components are deployed correctly:
+
+```bash
+# Check Kubernetes nodes are Ready
+vagrant ssh ctrl -c "kubectl get nodes"
+# Expected: 3/3 nodes Ready (ctrl, node-1, node-2)
+
+# Check all system pods
+vagrant ssh ctrl -c "kubectl get pods -A"
+# Expected: All system pods running (24+ pods)
+
+# Check SMS deployment namespace and pods
+vagrant ssh ctrl -c "kubectl get pods -n sms-spam-detection"
+# Expected: app-service and model-service pods created with Istio sidecars (1/2 ready)
+
+# Check all SMS resources
+vagrant ssh ctrl -c "kubectl get all,pv,pvc,ingress,gateway,virtualservice -n sms-spam-detection"
+# Expected: Services, Deployments, PV/PVC bound, Ingress with IP, Istio Gateway/VirtualService
+
+# Verify persistent storage is configured
+vagrant ssh ctrl -c "kubectl describe pv model-files-pv"
+# Expected: HostPath /mnt/shared/models, Status: Bound
+
+# Verify shared folder is accessible on all nodes
 vagrant ssh ctrl -c "ls -la /mnt/shared/models"
 vagrant ssh node-1 -c "ls -la /mnt/shared/models"
+vagrant ssh node-2 -c "ls -la /mnt/shared/models"
+# Expected: All nodes can access the shared folder
+```
 
-# 4. Install the Helm chart
-cd k8s/helm-chart
-helm install sms-detector sms-spam-detector
+### Helm Management Commands
 
-# 5. Wait for pods to be ready
-kubectl wait --for=condition=ready pod \
-  -l app.kubernetes.io/name=sms-spam-detector \
-  -n sms-spam-detection --timeout=180s
+```bash
+# View release status
+helm status sms-detector
+helm list
 
-# 6. Add DNS entries
+# View deployment history
+helm history sms-detector
+
+# View applied values
+helm get values sms-detector
+
+# Upgrade with new configuration
+helm upgrade sms-detector . -f ~/helm-install-values.yaml
+
+# Rollback to previous version
+helm rollback sms-detector
+
+# Uninstall release
+helm uninstall sms-detector
+```
+
+### Configure Container Registry Credentials (For Production)
+
+If using private GitHub Container Registry (GHCR), create credentials:
+
+```bash
+# Inside control node
+kubectl create secret docker-registry container-registry-secret \
+  --docker-server=ghcr.io \
+  --docker-username=YOUR_GITHUB_USERNAME \
+  --docker-password=YOUR_GITHUB_PAT \
+  --docker-email=YOUR_EMAIL \
+  -n sms-spam-detection
+
+# Then update Helm release
+helm upgrade sms-detector . \
+  -f ~/helm-install-values.yaml \
+  --set imagePullSecrets.enabled=true
+```
+
+### Add DNS Entries
+
+On your host machine, add the following to `/etc/hosts`:
+
+```bash
+# For Nginx Ingress
 echo "192.168.56.95 sms.local" | sudo tee -a /etc/hosts
+
+# For Istio Gateway
 echo "192.168.56.96 sms-istio.local" | sudo tee -a /etc/hosts
+```
+
+Then access:
+- Nginx: http://sms.local
+- Istio: http://sms-istio.local
+
 
 # 7. Access the application
 open [http://sms.local](http://sms.local)           # Nginx Ingress

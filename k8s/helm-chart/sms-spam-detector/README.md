@@ -25,6 +25,92 @@ This Helm chart deploys the SMS Spam Detection application to Kubernetes with bo
 
 4. **kubectl** and **helm** installed and configured
 
+## Tested Installation 
+
+The following installation steps have been verified to work correctly on the Kubernetes cluster:
+
+### Quick Verified Installation
+
+```bash
+# 1. SSH to control node
+vagrant ssh ctrl
+
+# 2. Copy Helm chart (from host in another terminal)
+scp -r k8s/helm-chart/sms-spam-detector ~/helm-chart
+
+# 3. Create custom values file (disables optional components for testing)
+cat > ~/helm-install-values.yaml << 'EOF'
+imagePullSecrets:
+  enabled: false
+monitoring:
+  enabled: false
+prometheus:
+  prometheusOperator:
+    enabled: false
+  prometheus:
+    enabled: false
+  alertmanager:
+    enabled: false
+modelService:
+  replicas: 1
+appService:
+  replicas: 1
+EOF
+
+# 4. Add Helm repositories
+helm repo add prometheus-community https://prometheus-community.github.io/helm-charts
+helm repo update
+
+# 5. Build dependencies
+cd ~/helm-chart
+helm dependency build
+
+# 6. Lint chart
+helm lint .
+
+# 7. Dry-run (preview manifests)
+helm install --dry-run sms-detector . -f ~/helm-install-values.yaml
+
+# 8. Install
+helm install sms-detector . -f ~/helm-install-values.yaml
+
+# 9. Verify
+helm list
+helm status sms-detector
+kubectl get pods -n sms-spam-detection
+kubectl get all,pv,pvc,ingress,gateway,virtualservice -n sms-spam-detection
+```
+
+### Cluster Verification Commands
+
+```bash
+# Verify Kubernetes cluster is ready
+vagrant ssh ctrl -c "kubectl get nodes"
+# Expected: 3/3 nodes Ready
+
+# Check all pods in cluster
+vagrant ssh ctrl -c "kubectl get pods -A"
+# Expected: All system pods running
+
+# Check SMS deployment
+vagrant ssh ctrl -c "kubectl get pods -n sms-spam-detection"
+# Expected: 1/2 containers ready (Istio proxy running, app waiting for image)
+
+# Check all resources
+vagrant ssh ctrl -c "kubectl get all,pv,pvc,ingress,gateway,virtualservice -n sms-spam-detection"
+# Expected: All resources listed above
+
+# Verify storage binding
+vagrant ssh ctrl -c "kubectl describe pv model-files-pv"
+# Expected: Status Bound, HostPath /mnt/shared/models
+
+# Verify shared folder access
+vagrant ssh ctrl -c "ls -la /mnt/shared/models"
+vagrant ssh node-1 -c "ls -la /mnt/shared/models"
+vagrant ssh node-2 -c "ls -la /mnt/shared/models"
+# Expected: All nodes can access the shared folder
+```
+
 ## Pre-Installation Setup
 
 ### 1. Prepare VirtualBox Shared Folder
