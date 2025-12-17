@@ -32,6 +32,7 @@ PR Link: https://github.com/doda25-team12/lib-version/pull/3/commits
     - PR Link 2: https://github.com/doda25-team12/model-service/pull/10 
 - Andrei Paduraru (5774489): Bug fixing for AMD64 processors. PR Link: https://github.com/doda25-team12/operation/pull/7
 - Stilyan Penchev (5749131): Installed and setup linux on my personal computer to make running the project possible.
+- Dragos Erhan (6450520): Imlemented Alerting with this PR: https://github.com/doda25-team12/operation/pull/15. Moreover working on the Grafana Task.
 
 ## Week 4
 - Atharva Dagaonkar (6406947): Worked on fixing the Vagrantfile and assisted in debugging https://github.com/doda25-team12/operation/pull/14
@@ -40,3 +41,4 @@ PR Link: https://github.com/doda25-team12/lib-version/pull/3/commits
 - Stilyan Penchev (5749131): (Assignment A3) I added ServiceMonitor helm chart template to make implementing alerting with Prometheus easier.
 PR Link: https://github.com/doda25-team12/operation/pull/11
 - Andrei Paduraru (5774489): More bugfixing for Ubuntu. PR: https://github.com/doda25-team12/operation/pull/12
+- Dragos Erhan (6450520): Continue working on Grafana+ Continuous Experimentation Task with Atharva.
