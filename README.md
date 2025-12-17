@@ -18,6 +18,55 @@ The application consists of two microservices:
    - Requires trained model files to be mounted or downloaded
    - Source code: [doda25-team12/model-service](https://github.com/doda25-team12/model-service)
 
+## Container Images and Model Artifacts
+
+### Automated Releases
+
+Container images and model artifacts are **automatically generated** by the model-service repository via GitHub Actions whenever code is pushed to the `main` branch or any branch starting with `test`.
+
+**Each automated release includes:**
+- **Docker Images** in GitHub Container Registry (GHCR):
+  - `ghcr.io/doda25-team12/app-service:v{VERSION}`
+  - `ghcr.io/doda25-team12/model-service:v{VERSION}`
+  - Multi-architecture: linux/amd64 and linux/arm64
+  - Tagged as `latest` for main branch releases
+
+- **Model Files** in [GitHub Releases](https://github.com/doda25-team12/model-service/releases):
+  - `model-{VERSION}.joblib` (trained Decision Tree classifier)
+  - `preprocessor.joblib` (text preprocessing pipeline)
+
+### Using Latest Versions
+
+To use the most recent automatically-built images:
+
+```bash
+# Update .env to use latest tag
+VERSION=latest
+
+# Pull latest images
+docker compose pull
+
+# Restart services
+docker compose up -d
+```
+
+### Using Specific Versions
+
+To pin to a specific release version:
+
+```bash
+# Update .env
+VERSION=v1.0.2
+
+# Pull specific version
+docker compose pull
+docker compose up -d
+```
+
+### Manual Training (Optional)
+
+While automated releases provide pre-trained models and container images, you can still train models manually for development or experimentation. See the sections below for manual training instructions.
+
 ## Prerequisites
 
 1. **Docker Desktop**: Install from [docker.com](https://www.docker.com/)
