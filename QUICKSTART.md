@@ -11,6 +11,13 @@ This quickstart runs the Vagrant cluster, applies the finalization Ansible playb
 
 Run from the repository root:
 
+If you have an AMD GPU, first run:
+
+```bash
+sudo modprobe -r kvm_amd kvm
+```
+Otherwise, or after you ran the command above, run:
+
 ```bash
 vagrant up
 ```
@@ -25,9 +32,13 @@ vagrant status
 
 On your host (macOS/Linux):
 
+
+
 ```bash
 export KUBECONFIG=$(pwd)/kubeconfig
+vagrant ssh ctrl
 kubectl get nodes
+exit
 ```
 
 Expected: the control node (`ctrl`) and worker nodes are `Ready`.
@@ -56,6 +67,7 @@ You can run tags to limit work (e.g., `--tags metallb`, `--tags ingress`, `--tag
 **4. Verify cluster components**
 
 ```bash
+vagrant ssh ctrl
 kubectl get nodes
 kubectl get pods -A
 kubectl get svc -A | grep LoadBalancer
