@@ -389,6 +389,21 @@ curl http://sms.local/metrics
 # Navigate to Status -> Targets in Prometheus
 ```
 
+### Alerting Monitor Secret
+
+Before helm deploy.
+
+```bash 
+NAMESPACE=sms-spam-detection
+kubectl create secret generic alertmanager-email-secret \
+  -n "$NAMESPACE" \
+  --from-literal=authPassword='YOUR_SMTP_APP_PASSWORD' \
+  --from-literal=authUsername='alertmanager@example.com' \
+  --from-literal=smarthost='smtp.example.com:587' \
+  --from-literal=from='alertmanager@example.com' \
+  --from-literal=to='dev-team@example.com'
+```
+
 ### Helm Dependency Update
 
 Before installing, update Helm dependencies:
