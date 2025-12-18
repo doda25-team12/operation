@@ -1,0 +1,22 @@
+{{- if .Values.prometheusRule.enabled }}
+apiVersion: monitoring.coreos.com/v1
+kind: PrometheusRule
+metadata:
+  name: {{ .Values.prometheusRule.name }}
+  labels:
+    role: alert-rules
+spec:
+  groups:
+    - name: {{ .Values.prometheusRule.group }}
+      rules:
+        - alert: HighRequestRate
+          expr: |
+            rate({{ .Values.prometheusRule.metricName }}{ {{ .Values.prometheusRule.metricLabelSelector }} }[1m]) > {{ printf "%.6f" (div .Values.prometheusRule.threshold_requests_per_minute 60) }}
+          for: {{ .Values.prometheusRule.duration_minutes }}m
+          labels:
+            severity: warning
+            service: app-service
+          annotations:
+            summary: "High request rate for app-service"
+            description: "The app-service is receiving more than {{ .Values.prometheusRule.threshold_requests_per_minute }} requests/min for {{ .Values.prometheusRule.duration_minutes }} minutes."
+{{- end }}

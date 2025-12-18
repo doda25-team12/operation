@@ -234,6 +234,28 @@ prometheus:
         - /
       annotations:
         nginx.ingress.kubernetes.io/ssl-redirect: "false"
+
+alertmanagerConfig:
+  enabled: true
+  name: sms-alertmanager-config
+  # Reference the secret where all SMTP info is stored
+  smtpSecretName: alertmanager-email-secret
+  smtpPasswordKey: authPassword  # key inside the secret for password
+  smtpUsernameKey: authUsername  # key inside the secret for username
+  smtpSmarthostKey: smarthost     # key inside the secret for smarthost
+  smtpFromKey: from               # key inside the secret for 'from' field
+  smtpToKey: to                   # key inside the secret for 'to' field
+
+# PrometheusRule for alerting
+prometheusRule:
+  enabled: true
+  name: sms-prometheusrules
+  group: high-traffic-alerts
+  metricName: http_requests_total
+  metricLabelSelector: 'job="app-service"'
+  threshold_requests_per_minute: 15
+  duration_minutes: 2
+
   
   # Disable components we don't need
   kubeStateMetrics:

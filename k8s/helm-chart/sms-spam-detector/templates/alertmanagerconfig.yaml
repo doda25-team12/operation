@@ -1,0 +1,22 @@
+{{- if .Values.alertmanagerConfig.enabled }}
+apiVersion: monitoring.coreos.com/v1alpha1
+kind: AlertmanagerConfig
+metadata:
+  name: {{ .Values.alertmanagerConfig.name }}
+  labels:
+    managed-by: {{ include "helm.sh/chart" . | default "helm" }}
+spec:
+  route:
+    groupBy: ['alertname']
+    receiver: 'email-team'
+  receivers:
+    - name: 'email-team'
+      emailConfigs:
+        - to: {{ (lookup "v1" "Secret" .Release.Namespace .Values.alertmanagerConfig.smtpSecretName).data.to | b64dec }}
+          from: {{ (lookup "v1" "Secret" .Release.Namespace .Values.alertmanagerConfig.smtpSecretName).data.from | b64dec }}
+          smarthost: {{ (lookup "v1" "Secret" .Release.Namespace .Values.alertmanagerConfig.smtpSecretName).data.smarthost | b64dec }}
+          authUsername: {{ (lookup "v1" "Secret" .Release.Namespace .Values.alertmanagerConfig.smtpSecretName).data.authUsername | b64dec }}
+          authPassword:
+            name: {{ .Values.alertmanagerConfig.smtpSecretName }}
+            key: {{ .Values.alertmanagerConfig.smtpPasswordKey }}
+{{- end }}
