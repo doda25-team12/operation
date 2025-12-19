@@ -42,3 +42,6 @@ PR Link: https://github.com/doda25-team12/lib-version/pull/3/commits
 PR Link: https://github.com/doda25-team12/operation/pull/11
 - Andrei Paduraru (5774489): More bugfixing for Ubuntu. PR: https://github.com/doda25-team12/operation/pull/12
 - Dragos Erhan (6450520): Continue working on Grafana+ Continuous Experimentation Task with Atharva.
+
+## Week 5
+- Stilyan Penchev (5749131): (Assignment A4) Added simple global rate limiting with a cap of 10 requests per minute. PR: https://github.com/doda25-team12/operation/pull/18
