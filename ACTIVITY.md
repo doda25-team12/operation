@@ -45,3 +45,7 @@ PR Link: https://github.com/doda25-team12/operation/pull/11
 
 ## Week 5
 - Stilyan Penchev (5749131): (Assignment A4) Added simple global rate limiting with a cap of 10 requests per minute. PR: https://github.com/doda25-team12/operation/pull/18
+- Andrei Paduraru (5774489): Bugifixing docker and updating README:
+    - https://github.com/doda25-team12/operation/pull/19
+    - https://github.com/doda25-team12/model-service/pull/12
+    - https://github.com/doda25-team12/app/pull/5
