@@ -131,7 +131,7 @@ All configuration is managed through the `.env` file:
 | `MODEL_INTERNAL_PORT` | Internal port for model-service | 8081 | No |
 | `ORG_NAME` | GitHub organization for container images | doda25-team12 | Yes |
 | `VERSION` | Docker image tag to use | latest | Yes |
-| `MODEL_VERSION` | Model version for file naming | - | Yes (if using download) |
+| `MODEL_VERSION` | Model version for file naming | - | Yes  |
 | `MODEL_BASE_URL` | Base URL for downloading model files | - | Yes (if using download) |
 
 ### Customizing Ports

@@ -3,10 +3,15 @@ services:
   # 1. The Python Model Service (Backend)
   # -------------------------------------------------------
   model-service:
+    build:
+      context: ..
+      dockerfile: model-service/Dockerfile
     image: ghcr.io/${ORG_NAME}/model-service:${VERSION}
+    pull_policy: never
 
     environment:
       - PORT=${MODEL_INTERNAL_PORT}
+      # - MODEL_VERSION=${MODEL_VERSION}
 
     # Inject the model file from host to container
     # We map the local './models' folder to '/models' inside the container
@@ -20,7 +25,11 @@ services:
   # 2. The Java App Service (Frontend)
   # -------------------------------------------------------
   app-service:
+    build:
+      context: ..
+      dockerfile: app/Dockerfile
     image: ghcr.io/${ORG_NAME}/app:${VERSION}
+    pull_policy: never
 
     ports:
       - "${HOST_PORT}:${APP_INTERNAL_PORT}"
