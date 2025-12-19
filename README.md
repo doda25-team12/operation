@@ -101,13 +101,14 @@ If you want to train models from scratch:
     python src/read_data.py
     python src/text_preprocessing.py
     python src/text_classification.py
+    exit
     ```
 
 3.  Copy the generated `.joblib` files from `model-service/output/` to `operation/models/`:
 
     ```bash
-    cp output/model.joblib ../operation/models/model-0.0.1.joblib
-    cp output/preprocessor.joblib ../operation/models/
+    cp output/model.joblib ../models/model-0.0.1.joblib
+    cp output/preprocessor.joblib ../models/
     ```
 
 ### Using Pre-trained Models
@@ -228,6 +229,12 @@ Expected response:
 ## Troubleshooting
 
 ### Service fails to start
+
+**Problem**: `Cannot connect to the Docker daemon...`
+
+**Solution**: The Docker service is likely not running.
+- Start it: `sudo systemctl start docker`
+- Enable on boot: `sudo systemctl enable docker`
 
 **Problem**: Model-service exits immediately
 
