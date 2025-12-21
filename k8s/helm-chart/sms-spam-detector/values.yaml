@@ -105,6 +105,10 @@ ingress:
   annotations:
     nginx.ingress.kubernetes.io/ssl-redirect: "false"
     nginx.ingress.kubernetes.io/rewrite-target: /
+  rateLimit:
+    enabled: true
+    rpm: 10           # global cap of 10 requests per minute
+    burst: 5          # short bursts allowed before throttling
   tls:
     enabled: false
     secretName: ""
