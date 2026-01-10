@@ -49,3 +49,6 @@ PR Link: https://github.com/doda25-team12/operation/pull/11
     - https://github.com/doda25-team12/operation/pull/19
     - https://github.com/doda25-team12/model-service/pull/12
     - https://github.com/doda25-team12/app/pull/5
+
+## Week 6
+- Stilyan Penchev (5749131): (A4) Added improvments to the late rimiting from the previous week. Namely ingress rate-limiting knobs for rps, connections and status code. PR: https://github.com/doda25-team12/operation/pull/20
