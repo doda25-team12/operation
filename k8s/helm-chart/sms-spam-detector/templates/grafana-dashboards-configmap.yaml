@@ -1,0 +1,15 @@
+{{- if and .Values.monitoring.enabled .Values.prometheus.grafana.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: {{ include "sms-spam-detector.fullname" . }}-grafana-dashboards
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{ include "sms-spam-detector.labels" . | nindent 4 }}
+    grafana_dashboard: "1"
+data:
+  sms-metrics-dashboard.json: |
+{{ .Files.Get "dashboards/sms-metrics-dashboard.json" | indent 4 }}
+  sms-a4-experimentation-dashboard.json: |
+{{ .Files.Get "dashboards/sms-a4-experimentation-dashboard.json" | indent 4 }}
+{{- end }}
