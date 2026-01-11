@@ -225,7 +225,19 @@ prometheus:
         nginx.ingress.kubernetes.io/ssl-redirect: "false"
   
   grafana:
-    enabled: false
+    enabled: true
+    adminPassword: "prom-operator"
+    persistence:
+      enabled: true
+      size: 1Gi
+    ingress:
+      enabled: true
+      ingressClassName: nginx
+      path: /
+      hosts:
+        - grafana.local
+      annotations:
+        nginx.ingress.kubernetes.io/ssl-redirect: "false"
   
   # AlertManager configuration
   alertmanager:
