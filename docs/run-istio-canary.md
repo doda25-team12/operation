@@ -61,6 +61,22 @@ curl -s -H "Host: sms-istio.local" --cookie "experiment=canary" http://192.168.5
 curl -s -H "Host: sms-istio.local" --cookie "experiment=stable" http://192.168.56.96/ | grep -i version
 ```
 
+## Shadow launch (model-service traffic mirroring)
+- Deploy a shadow (new model) that receives mirrored traffic while users stay on the stable model:
+```bash
+helm upgrade --install sms-detector . \
+  --namespace sms-spam-detection \
+  --set modelService.shadow.enabled=true \
+  --set modelService.shadow.versionLabel=v-shadow \
+  --set modelService.shadow.name=model-service-shadow \
+  --set modelService.shadow.image.tag=latest \
+  --set modelService.shadow.mirrorPercentage=100
+```
+- The main route continues to use the stable subset; Istio mirrors the same requests to the shadow subset.
+- ServiceMonitor now adds a `model_version` label, so you can compare stable vs. shadow in Prometheus/Grafana, e.g.:
+  - `sum(rate(model_predictions_total{model_version="v1"}[5m]))`
+  - `sum(rate(model_predictions_total{model_version="v-shadow"}[5m]))`
+
 6) Teardown
 ```bash
 helm uninstall sms-detector -n sms-spam-detection

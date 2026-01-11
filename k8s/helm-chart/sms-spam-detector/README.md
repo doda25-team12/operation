@@ -443,6 +443,20 @@ vagrant reload
     --set istio.traffic.app.canaryWeight=15
   ```
 
+### Shadow launch (model-service mirroring)
+- A shadow model revision that receives mirrored traffic while users continue to receive responses from the stable subset.
+- Enabled with Helm values (default mirrors 100% of stable traffic):
+  ```bash
+  helm upgrade --install sms-detector ./sms-spam-detector \
+    --set modelService.shadow.enabled=true \
+    --set modelService.shadow.name=model-service-shadow \
+    --set modelService.shadow.versionLabel=v-shadow \
+    --set modelService.shadow.image.tag=latest \
+    --set modelService.shadow.mirrorPercentage=100
+  ```
+- Routing stays consistent: canary app -> canary model; stable app -> stable model + mirrored to the shadow subset for evaluation.
+- ServiceMonitor adds a `model_version` label so dashboards can compare stable vs. shadow metrics (e.g., `sum(rate(model_predictions_total{model_version="v-shadow"}[5m]))`).
+
 ## Monitoring and Observability
 
 ### Overview
