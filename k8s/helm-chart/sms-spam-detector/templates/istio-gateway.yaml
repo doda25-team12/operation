@@ -93,6 +93,8 @@ spec:
   hosts:
   - {{ .Values.modelService.name }}
   http:
+  {{- $shadowEnabled := and .Values.modelService.shadow.enabled .Values.modelService.shadow.versionLabel }}
+  {{- $shadowMirrorPercent := int (default 100 .Values.modelService.shadow.mirrorPercentage) }}
   {{- if .Values.modelService.canary.enabled }}
   - name: model-canary-pairing
     match:
@@ -109,4 +111,11 @@ spec:
     - destination:
         host: {{ .Values.modelService.name }}
         subset: {{ .Values.modelService.versionLabel }}
+    {{- if and $shadowEnabled (gt $shadowMirrorPercent 0) }}
+    mirror:
+      host: {{ .Values.modelService.name }}
+      subset: {{ .Values.modelService.shadow.versionLabel }}
+    mirrorPercentage:
+      value: {{ $shadowMirrorPercent }}
+    {{- end }}
 {{- end }}

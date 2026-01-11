@@ -28,6 +28,15 @@ modelService:
       tag: latest
     replicas: 1
     versionLabel: v2
+  shadow:
+    enabled: false
+    name: model-service-shadow
+    image:
+      repository: model-service
+      tag: latest
+    replicas: 1
+    versionLabel: v-shadow
+    mirrorPercentage: 100
   service:
     type: ClusterIP
     port: 8081

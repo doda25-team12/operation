@@ -57,5 +57,11 @@ spec:
         app: {{ .Values.modelService.name }}
         version: {{ .Values.modelService.canary.versionLabel }}
     {{- end }}
+    {{- if and .Values.modelService.shadow.enabled .Values.modelService.shadow.versionLabel }}
+    - name: {{ .Values.modelService.shadow.versionLabel }}
+      labels:
+        app: {{ .Values.modelService.name }}
+        version: {{ .Values.modelService.shadow.versionLabel }}
+    {{- end }}
 {{- end }}
 
