@@ -52,4 +52,6 @@ PR Link: https://github.com/doda25-team12/operation/pull/11
 
 ## Week 6
 - Stilyan Penchev (5749131): (A4) Added improvments to the late rimiting from the previous week. Namely ingress rate-limiting knobs for rps, connections and status code. PR: https://github.com/doda25-team12/operation/pull/20
+
+## Week 7
 - Yuvraj Singh Pathania (6495044): Implemented Additional Use Case for Istio by implementing shadow launch for model-service including shadow deployment template, traffic mirroring and documentation updates. PR: https://github.com/doda25-team12/operation/pull/21
