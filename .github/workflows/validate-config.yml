@@ -58,8 +58,8 @@ jobs:
           cd k8s/validation
 
           # Extract error and warning counts
-          ERRORS=$(grep "Errors:" validation-output.txt | grep -oE "[0-9]+" || echo "0")
-          WARNINGS=$(grep "Warnings:" validation-output.txt | grep -oE "[0-9]+" || echo "0")
+          ERRORS=$(grep "Errors:" validation-output.txt | grep -oE "[0-9]+" | tail -1 || echo "0")
+          WARNINGS=$(grep "Warnings:" validation-output.txt | grep -oE "[0-9]+" | tail -1 || echo "0")
 
           echo "errors=$ERRORS" >> $GITHUB_OUTPUT
           echo "warnings=$WARNINGS" >> $GITHUB_OUTPUT
