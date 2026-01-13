@@ -9,3 +9,4 @@ data:
   APP_INTERNAL_PORT: {{ .Values.config.appInternalPort | quote }}
   MODEL_INTERNAL_PORT: {{ .Values.config.modelInternalPort | quote }}
   MODEL_SERVICE_URL: {{ .Values.config.modelServiceUrl | quote }}
+  MODEL_VERSION: {{ .Values.modelService.image.tag | replace "v" "" | quote }}

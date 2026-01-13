@@ -124,7 +124,7 @@ ingress:
 
 # Istio configuration
 istio:
-  enabled: true
+  enabled: false
   gateway:
     name: sms-gateway
     host: sms-istio.local
@@ -162,7 +162,7 @@ secrets:
 # Monitoring Configuration (Prometheus)
 # ========================================
 monitoring:
-  enabled: true
+  enabled: false
   
   # ServiceMonitor configuration for app-service
   appService:
@@ -261,7 +261,7 @@ prometheus:
         nginx.ingress.kubernetes.io/ssl-redirect: "false"
 
 alertmanagerConfig:
-  enabled: true
+  enabled: false
   name: sms-alertmanager-config
   # Reference the secret where all SMTP info is stored
   smtpSecretName: alertmanager-email-secret
@@ -273,7 +273,7 @@ alertmanagerConfig:
 
 # PrometheusRule for alerting
 prometheusRule:
-  enabled: true
+  enabled: false
   name: sms-prometheusrules
   group: high-traffic-alerts
   metricName: http_requests_total

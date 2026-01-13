@@ -1,0 +1,191 @@
+name: Configuration Validation
+
+on:
+  pull_request:
+    paths:
+      - 'k8s/helm-chart/**'
+      - '.env'
+      - 'docker-compose.yml'
+      - 'k8s/validation/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'k8s/helm-chart/**'
+      - '.env'
+      - 'docker-compose.yml'
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    name: Validate Configuration Files
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install Python dependencies
+        run: |
+          pip install jsonschema pyyaml
+
+      - name: Install yq
+        run: |
+          sudo wget -qO /usr/local/bin/yq https://github.com/mikefarah/yq/releases/latest/download/yq_linux_amd64
+          sudo chmod +x /usr/local/bin/yq
+          yq --version
+
+      - name: Install Helm
+        uses: azure/setup-helm@v4
+        with:
+          version: '3.14.0'
+
+      - name: Run configuration validation
+        id: validation
+        run: |
+          cd k8s/validation
+          bash validate-config.sh 2>&1 | tee validation-output.txt
+          echo "exit_code=${PIPESTATUS[0]}" >> $GITHUB_OUTPUT
+        continue-on-error: true
+
+      - name: Parse validation results
+        id: parse
+        run: |
+          cd k8s/validation
+
+          # Extract error and warning counts
+          ERRORS=$(grep "Errors:" validation-output.txt | grep -oE "[0-9]+" || echo "0")
+          WARNINGS=$(grep "Warnings:" validation-output.txt | grep -oE "[0-9]+" || echo "0")
+
+          echo "errors=$ERRORS" >> $GITHUB_OUTPUT
+          echo "warnings=$WARNINGS" >> $GITHUB_OUTPUT
+
+          # Determine status icon
+          if [ "$ERRORS" -eq 0 ] && [ "$WARNINGS" -eq 0 ]; then
+            echo "status_icon=✅" >> $GITHUB_OUTPUT
+            echo "status_text=passed" >> $GITHUB_OUTPUT
+          elif [ "$ERRORS" -eq 0 ]; then
+            echo "status_icon=⚠️" >> $GITHUB_OUTPUT
+            echo "status_text=passed with warnings" >> $GITHUB_OUTPUT
+          else
+            echo "status_icon=❌" >> $GITHUB_OUTPUT
+            echo "status_text=failed" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Comment PR with results
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const output = fs.readFileSync('k8s/validation/validation-output.txt', 'utf8');
+            const errors = '${{ steps.parse.outputs.errors }}';
+            const warnings = '${{ steps.parse.outputs.warnings }}';
+            const icon = '${{ steps.parse.outputs.status_icon }}';
+            const status = '${{ steps.parse.outputs.status_text }}';
+
+            // Extract specific errors/warnings from output
+            const lines = output.split('\n');
+            let errorDetails = [];
+            let warningDetails = [];
+            let inErrorSection = false;
+            let inWarningSection = false;
+
+            for (let line of lines) {
+              if (line.includes('[ERROR]')) {
+                errorDetails.push(line.replace(/\x1b\[[0-9;]*m/g, '').trim());
+              }
+              if (line.includes('[WARNING]')) {
+                warningDetails.push(line.replace(/\x1b\[[0-9;]*m/g, '').trim());
+              }
+            }
+
+            // Build summary table
+            let issuesTable = '';
+            if (errorDetails.length > 0 || warningDetails.length > 0) {
+              issuesTable = '\n### Issues Found\n\n| Severity | Description |\n|----------|-------------|\n';
+
+              errorDetails.forEach(err => {
+                const match = err.match(/\[ERROR\]\s*(.+)/);
+                if (match) {
+                  issuesTable += `| ❌ ERROR | ${match[1]} |\n`;
+                }
+              });
+
+              warningDetails.forEach(warn => {
+                const match = warn.match(/\[WARNING\]\s*(.+)/);
+                if (match) {
+                  issuesTable += `| ⚠️ WARNING | ${match[1]} |\n`;
+                }
+              });
+            }
+
+            const body = `## ${icon} Configuration Validation ${status}
+
+            **Summary:**
+            - Errors: ${errors}
+            - Warnings: ${warnings}
+            ${issuesTable}
+
+            <details>
+            <summary>View full validation output</summary>
+
+            \`\`\`
+            ${output}
+            \`\`\`
+            </details>
+
+            ${errors > 0 ? '\n**Action Required:** Fix errors before merging this PR.\n' : ''}
+            ${warnings > 0 && errors == 0 ? '\n**Recommended:** Review warnings and fix if needed.\n' : ''}
+
+            ---
+            <sub>🤖 Automated by Configuration Validation Framework</sub>
+            `;
+
+            // Find existing comment
+            const { data: comments } = await github.rest.issues.listComments({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+            });
+
+            const botComment = comments.find(comment =>
+              comment.body.includes('Configuration Validation')
+            );
+
+            if (botComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                comment_id: botComment.id,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                issue_number: context.issue.number,
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                body: body
+              });
+            }
+
+      - name: Fail if validation failed
+        if: steps.parse.outputs.errors != '0'
+        run: |
+          echo "❌ Configuration validation failed with ${{ steps.parse.outputs.errors }} error(s)"
+          echo "Review the validation output above and fix the errors"
+          exit 1
+
+      - name: Upload validation output as artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: validation-results
+          path: k8s/validation/validation-output.txt
+          retention-days: 30

@@ -1,0 +1,318 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "SMS Spam Detector Helm Values Schema",
+  "description": "Validation schema for sms-spam-detector Helm chart values",
+  "type": "object",
+  "required": ["namespace", "imageRegistry", "imageOrganization", "modelService", "appService", "persistence", "ingress", "config"],
+  "properties": {
+    "namespace": {
+      "type": "string",
+      "pattern": "^[a-z0-9-]+$",
+      "description": "Kubernetes namespace for deployment",
+      "minLength": 1
+    },
+    "imageRegistry": {
+      "type": "string",
+      "description": "Container registry hostname (e.g., ghcr.io)",
+      "minLength": 1
+    },
+    "imageOrganization": {
+      "type": "string",
+      "description": "Organization name in registry",
+      "minLength": 1
+    },
+    "imagePullPolicy": {
+      "type": "string",
+      "enum": ["Always", "IfNotPresent", "Never"],
+      "description": "Image pull policy for containers"
+    },
+    "imagePullSecrets": {
+      "type": "object",
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string"
+        }
+      },
+      "required": ["enabled"]
+    },
+    "modelService": {
+      "type": "object",
+      "required": ["enabled", "name", "versionLabel", "image", "service"],
+      "properties": {
+        "enabled": {
+          "type": "boolean"
+        },
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "versionLabel": {
+          "type": "string",
+          "pattern": "^v[0-9]+$",
+          "description": "Version label for Istio routing (e.g., v1, v2)"
+        },
+        "image": {
+          "type": "object",
+          "required": ["repository", "tag"],
+          "properties": {
+            "repository": {
+              "type": "string",
+              "minLength": 1
+            },
+            "tag": {
+              "type": "string",
+              "pattern": "^(latest|v?[0-9]+\\.[0-9]+\\.[0-9]+(-[a-z0-9]+)?)$",
+              "description": "Image tag (latest or semantic version)"
+            }
+          }
+        },
+        "replicas": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "service": {
+          "type": "object",
+          "required": ["type", "port"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["ClusterIP", "NodePort", "LoadBalancer"]
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 1024,
+              "maximum": 65535
+            }
+          }
+        },
+        "resources": {
+          "type": "object",
+          "properties": {
+            "requests": {
+              "type": "object",
+              "properties": {
+                "memory": {"type": "string"},
+                "cpu": {"type": "string"}
+              }
+            },
+            "limits": {
+              "type": "object",
+              "properties": {
+                "memory": {"type": "string"},
+                "cpu": {"type": "string"}
+              }
+            }
+          }
+        },
+        "canary": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "type": "boolean"
+            },
+            "name": {
+              "type": "string"
+            },
+            "versionLabel": {
+              "type": "string",
+              "pattern": "^v[0-9]+$"
+            },
+            "image": {
+              "type": "object",
+              "properties": {
+                "repository": {"type": "string"},
+                "tag": {
+                  "type": "string",
+                  "pattern": "^(latest|v?[0-9]+\\.[0-9]+\\.[0-9]+(-[a-z0-9]+)?)$"
+                }
+              }
+            },
+            "replicas": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        },
+        "shadow": {
+          "type": "object",
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "name": {"type": "string"},
+            "versionLabel": {"type": "string"},
+            "image": {
+              "type": "object",
+              "properties": {
+                "tag": {"type": "string"}
+              }
+            },
+            "replicas": {"type": "integer", "minimum": 1},
+            "mirrorPercentage": {
+              "type": "integer",
+              "minimum": 0,
+              "maximum": 100
+            }
+          }
+        }
+      }
+    },
+    "appService": {
+      "type": "object",
+      "required": ["enabled", "name", "versionLabel", "image", "service"],
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "name": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$"
+        },
+        "versionLabel": {
+          "type": "string",
+          "pattern": "^v[0-9]+$"
+        },
+        "image": {
+          "type": "object",
+          "required": ["repository", "tag"],
+          "properties": {
+            "repository": {"type": "string"},
+            "tag": {
+              "type": "string",
+              "pattern": "^(latest|v?[0-9]+\\.[0-9]+\\.[0-9]+(-[a-z0-9]+)?)$"
+            }
+          }
+        },
+        "replicas": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 10
+        },
+        "service": {
+          "type": "object",
+          "required": ["type", "port"],
+          "properties": {
+            "type": {
+              "type": "string",
+              "enum": ["ClusterIP", "NodePort", "LoadBalancer"]
+            },
+            "port": {
+              "type": "integer",
+              "minimum": 1024,
+              "maximum": 65535
+            }
+          }
+        },
+        "canary": {
+          "type": "object",
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "versionLabel": {"type": "string"}
+          }
+        }
+      }
+    },
+    "persistence": {
+      "type": "object",
+      "required": ["enabled", "storageType"],
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "storageType": {
+          "type": "string",
+          "enum": ["hostPath", "nfs", "persistentVolumeClaim"]
+        },
+        "hostPath": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "description": "Absolute path on host"
+            }
+          }
+        },
+        "accessMode": {
+          "type": "string",
+          "enum": ["ReadWriteOnce", "ReadOnlyMany", "ReadWriteMany"]
+        },
+        "size": {"type": "string"}
+      }
+    },
+    "ingress": {
+      "type": "object",
+      "required": ["enabled", "className", "host"],
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "className": {
+          "type": "string",
+          "enum": ["nginx", "traefik", "haproxy"]
+        },
+        "host": {
+          "type": "string",
+          "pattern": "^[a-z0-9.-]+$",
+          "description": "Hostname for ingress"
+        },
+        "rateLimit": {
+          "type": "object",
+          "properties": {
+            "enabled": {"type": "boolean"},
+            "rpm": {"type": "integer", "minimum": 1},
+            "burst": {"type": "integer", "minimum": 1}
+          }
+        }
+      }
+    },
+    "config": {
+      "type": "object",
+      "required": ["appInternalPort", "modelInternalPort", "modelServiceUrl"],
+      "properties": {
+        "appInternalPort": {
+          "type": "string",
+          "pattern": "^[0-9]+$",
+          "description": "Must match appService.service.port as string"
+        },
+        "modelInternalPort": {
+          "type": "string",
+          "pattern": "^[0-9]+$",
+          "description": "Must match modelService.service.port as string"
+        },
+        "modelServiceUrl": {
+          "type": "string",
+          "format": "uri",
+          "pattern": "^http://[a-z0-9-]+:[0-9]+$",
+          "description": "Format: http://<service-name>:<port>"
+        }
+      }
+    },
+    "istio": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"},
+        "gateway": {
+          "type": "object",
+          "properties": {
+            "name": {"type": "string"},
+            "host": {"type": "string"}
+          }
+        }
+      }
+    },
+    "monitoring": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"}
+      }
+    },
+    "prometheusRule": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"}
+      }
+    },
+    "alertmanagerConfig": {
+      "type": "object",
+      "properties": {
+        "enabled": {"type": "boolean"}
+      }
+    }
+  }
+}

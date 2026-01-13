@@ -1,0 +1,116 @@
+# Test configuration: VALID
+# This configuration should pass all validation checks
+
+namespace: sms-spam-detection
+
+imageRegistry: ghcr.io
+imageOrganization: doda25-team12
+imagePullPolicy: IfNotPresent
+
+imagePullSecrets:
+  enabled: false
+  name: container-registry-secret
+
+modelService:
+  enabled: true
+  name: model-service
+  versionLabel: v1
+  image:
+    repository: model-service
+    tag: v1.0.2
+  replicas: 2
+  canary:
+    enabled: false
+    name: model-service-canary
+    versionLabel: v2
+    image:
+      repository: model-service
+      tag: v1.1.0-rc
+    replicas: 1
+  shadow:
+    enabled: false
+    name: model-service-shadow
+    versionLabel: v-shadow
+    image:
+      repository: model-service
+      tag: v1.1.0-shadow
+    replicas: 1
+    mirrorPercentage: 100
+  service:
+    type: ClusterIP
+    port: 8081
+  resources:
+    requests:
+      memory: "512Mi"
+      cpu: "250m"
+    limits:
+      memory: "1Gi"
+      cpu: "500m"
+
+appService:
+  enabled: true
+  name: app-service
+  versionLabel: v1
+  image:
+    repository: app
+    tag: v1.0.2
+  replicas: 2
+  canary:
+    enabled: false
+    versionLabel: v2
+    image:
+      repository: app
+      tag: v1.1.0-rc
+    replicas: 1
+  service:
+    type: ClusterIP
+    port: 8080
+  resources:
+    requests:
+      memory: "256Mi"
+      cpu: "100m"
+    limits:
+      memory: "512Mi"
+      cpu: "500m"
+
+persistence:
+  enabled: true
+  storageType: hostPath
+  hostPath:
+    path: /mnt/shared/models
+  accessMode: ReadOnlyMany
+  size: 1Gi
+  reclaimPolicy: Retain
+
+ingress:
+  enabled: true
+  className: nginx
+  host: sms.local
+  annotations:
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+  rateLimit:
+    enabled: true
+    rpm: 10
+    burst: 5
+  tls:
+    enabled: false
+
+config:
+  appInternalPort: "8080"
+  modelInternalPort: "8081"
+  modelServiceUrl: "http://model-service:8081"
+
+istio:
+  enabled: true
+  gateway:
+    name: sms-gateway
+    host: sms-istio.local
+
+monitoring:
+  enabled: false
+
+prometheusRule:
+  enabled: false
+
+alertmanagerConfig:
+  enabled: false
