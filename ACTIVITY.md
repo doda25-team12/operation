@@ -50,6 +50,7 @@ PR Link: https://github.com/doda25-team12/operation/pull/11
     - https://github.com/doda25-team12/operation/pull/19
     - https://github.com/doda25-team12/model-service/pull/12
     - https://github.com/doda25-team12/app/pull/5
+- Yuvraj Singh Pathania (6495044) : Tested out current progress by setting up the entire project locally and made sure things are good to go before the peer review 
 
 ## Week 6
 - Atharva Dagaonkar (6406947): (A4 Extension Proposal) Designed and implemented Configuration Validation Framework with 6-layer validation system (JSON schema, port consistency, image tag coherence, version labels, ConfigMap completeness, environment variables). Created validation scripts (validate-config.sh, pre-deployment-check.sh), JSON schema for values.yaml, and test suite with 3 test cases. Fixed critical bug: added MODEL_VERSION injection to ConfigMap template preventing CrashLoopBackOff errors. PR: https://github.com/doda25-team12/operation/pull/25
@@ -58,3 +59,7 @@ PR Link: https://github.com/doda25-team12/operation/pull/11
 ## Week 7
 - Atharva Dagaonkar (6406947): (A4 Extension Proposal) Completed Configuration Validation Framework implementation. Integrated GitHub Actions CI/CD workflow for automated PR validation. Created comprehensive documentation (EXTENSION_PROPOSAL.md) including usage guide, verification steps, troubleshooting, and rollout strategy. Fixed Helm chart defaults (disabled CRD-dependent features) and template reference errors. Branch: feature/configuration-validation-framework, PR: https://github.com/doda25-team12/operation/pull/25
 - Yuvraj Singh Pathania (6495044): Implemented Additional Use Case for Istio by implementing shadow launch for model-service including shadow deployment template, traffic mirroring and documentation updates. PR: https://github.com/doda25-team12/operation/pull/21
+
+## Week 8
+- Yuvraj Singh Pathania (6495044): For model-service - Implemented production-standard code linting using Ruff. Added lint checks to train-release and release-container CI/CD pipelines. Fixed 126 linting errors and resolved pickle deserialization bug caused by removed imports.
+    - PR Link : https://github.com/doda25-team12/model-service/pull/13
