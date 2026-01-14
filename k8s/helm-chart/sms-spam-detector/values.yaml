@@ -116,8 +116,11 @@ ingress:
     nginx.ingress.kubernetes.io/rewrite-target: /
   rateLimit:
     enabled: true
-    rpm: 10           # global cap of 10 requests per minute
-    burst: 5          # short bursts allowed before throttling
+    rpm: 10
+    rps: ""
+    burst: 5
+    connections: ""
+    statusCode: ""
   tls:
     enabled: false
     secretName: ""

@@ -307,7 +307,10 @@ kubectl exec -n sms-spam-detection deploy/app-service -c istio-proxy -- \
 | `persistence.hostPath.path` | Model files path | `/mnt/shared/models` |
 | `ingress.host` | Nginx Ingress hostname | `sms.local` |
 | `ingress.rateLimit.rpm` | Global ingress rate cap (requests/min) | `10` |
+| `ingress.rateLimit.rps` | Optional per-second cap | `""` |
 | `ingress.rateLimit.burst` | Short burst allowance before throttling | `5` |
+| `ingress.rateLimit.connections` | Optional concurrent connections cap | `""` |
+| `ingress.rateLimit.statusCode` | Optional throttle status code | `""` |
 | `istio.gateway.host` | Istio Gateway hostname | `sms-istio.local` |
 | `istio.enabled` | Enable Istio service mesh | `true` |
 
