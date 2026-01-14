@@ -44,6 +44,7 @@ PR Link: https://github.com/doda25-team12/operation/pull/11
 - Dragos Erhan (6450520): Continue working on Grafana+ Continuous Experimentation Task with Atharva.
 
 ## Week 5
+- Atharva Dagaonkar (6406947): Helped in general debugging and solidified Vagrant configuration.
 - Stilyan Penchev (5749131): (Assignment A4) Added simple global rate limiting with a cap of 10 requests per minute. PR: https://github.com/doda25-team12/operation/pull/18
 - Andrei Paduraru (5774489): Bugifixing docker and updating README:
     - https://github.com/doda25-team12/operation/pull/19
