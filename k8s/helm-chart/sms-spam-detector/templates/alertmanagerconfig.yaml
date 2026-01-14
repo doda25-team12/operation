@@ -4,7 +4,7 @@ kind: AlertmanagerConfig
 metadata:
   name: {{ .Values.alertmanagerConfig.name }}
   labels:
-    managed-by: {{ include "helm.sh/chart" . | default "helm" }}
+    {{- include "sms-spam-detector.labels" . | nindent 4 }}
 spec:
   route:
     groupBy: ['alertname']
