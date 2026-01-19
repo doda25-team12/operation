@@ -1,0 +1,73 @@
+{{- if or .Values.modelService.autoscaling.enabled .Values.appService.autoscaling.enabled }}
+{{- if .Values.modelService.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "sms-spam-detector.fullname" . }}-model-service
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "sms-spam-detector.labels" . | nindent 4 }}
+    app.kubernetes.io/component: model-service
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Values.modelService.name }}
+  minReplicas: {{ .Values.modelService.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.modelService.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.modelService.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.modelService.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.modelService.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.modelService.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}
+
+{{- if .Values.appService.autoscaling.enabled }}
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: {{ include "sms-spam-detector.fullname" . }}-app-service
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "sms-spam-detector.labels" . | nindent 4 }}
+    app.kubernetes.io/component: app-service
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: {{ .Values.appService.name }}
+  minReplicas: {{ .Values.appService.autoscaling.minReplicas }}
+  maxReplicas: {{ .Values.appService.autoscaling.maxReplicas }}
+  metrics:
+    {{- if .Values.appService.autoscaling.targetCPUUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.appService.autoscaling.targetCPUUtilizationPercentage }}
+    {{- end }}
+    {{- if .Values.appService.autoscaling.targetMemoryUtilizationPercentage }}
+    - type: Resource
+      resource:
+        name: memory
+        target:
+          type: Utilization
+          averageUtilization: {{ .Values.appService.autoscaling.targetMemoryUtilizationPercentage }}
+    {{- end }}
+{{- end }}
+{{- end }}
