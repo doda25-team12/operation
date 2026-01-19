@@ -59,6 +59,7 @@ PR Link: https://github.com/doda25-team12/operation/pull/11
 ## Week 7
 - Atharva Dagaonkar (6406947): (A4 Extension Proposal) Completed Configuration Validation Framework implementation. Integrated GitHub Actions CI/CD workflow for automated PR validation. Created comprehensive documentation (EXTENSION_PROPOSAL.md) including usage guide, verification steps, troubleshooting, and rollout strategy. Fixed Helm chart defaults (disabled CRD-dependent features) and template reference errors. Branch: feature/configuration-validation-framework, PR: https://github.com/doda25-team12/operation/pull/25
 - Yuvraj Singh Pathania (6495044): Implemented Additional Use Case for Istio by implementing shadow launch for model-service including shadow deployment template, traffic mirroring and documentation updates. PR: https://github.com/doda25-team12/operation/pull/21
+- Stilyan Penchev (5749131): Implemented Horizontal Pod Autoscaling for sms-spam-detector. PR: https://github.com/doda25-team12/operation/pull/28
 
 ## Week 8
 - Yuvraj Singh Pathania (6495044): For model-service - Implemented production-standard code linting using Ruff. Added lint checks to train-release and release-container CI/CD pipelines. Fixed 126 linting errors and resolved pickle deserialization bug caused by removed imports.
