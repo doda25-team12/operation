@@ -7,6 +7,8 @@ services:
 
     environment:
       - PORT=${MODEL_INTERNAL_PORT}
+      - MODEL_VERSION=${MODEL_VERSION_ENV:-1.0.2}
+      - MODEL_BASE_URL=${MODEL_BASE_URL:-}
 
     # Inject the model file from host to container
     # We map the local './models' folder to '/models' inside the container
@@ -20,7 +22,7 @@ services:
   # 2. The Java App Service (Frontend)
   # -------------------------------------------------------
   app-service:
-    image: ghcr.io/${ORG_NAME}/app:${VERSION}
+    image: ghcr.io/${ORG_NAME}/app:${APP_VERSION:-${VERSION}}
 
     ports:
       - "${HOST_PORT}:${APP_INTERNAL_PORT}"
