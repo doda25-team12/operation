@@ -32,13 +32,26 @@
 
   tasks:
     # ==========================================
+    # PRE-FLIGHT CHECKS
+    # ==========================================
+    - name: Verify Kubernetes connectivity
+      become_user: vagrant
+      command: kubectl cluster-info
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      register: k8s_check
+      failed_when: k8s_check.rc != 0
+      changed_when: false
+      tags: [always]
+
+    # ==========================================
     # SECTION 1: INSTALL METALLB
     # ==========================================
     - name: Download MetalLB native manifest
       get_url:
         url: "https://raw.githubusercontent.com/metallb/metallb/v{{ metallb_version }}/config/manifests/metallb-native.yaml"
         dest: /tmp/metallb-native.yaml
-        mode: '0644'
+        mode: "0644"
       tags:
         - metallb
 
@@ -70,7 +83,7 @@
       copy:
         src: ../files/k8s/metallb-ippool.yaml
         dest: /tmp/metallb-ippool.yaml
-        mode: '0644'
+        mode: "0644"
       tags:
         - metallb
 
@@ -86,7 +99,7 @@
       copy:
         src: ../files/k8s/metallb-l2advert.yaml
         dest: /tmp/metallb-l2advert.yaml
-        mode: '0644'
+        mode: "0644"
       tags:
         - metallb
 
@@ -209,7 +222,7 @@
       copy:
         src: ../files/k8s/dashboard-admin-user.yaml
         dest: /tmp/dashboard-admin-user.yaml
-        mode: '0644'
+        mode: "0644"
       tags:
         - dashboard
 
@@ -225,7 +238,7 @@
       copy:
         src: ../files/k8s/dashboard-ingress.yaml
         dest: /tmp/dashboard-ingress.yaml
-        mode: '0644'
+        mode: "0644"
       tags:
         - dashboard
 
@@ -278,7 +291,7 @@
       get_url:
         url: "https://github.com/istio/istio/releases/download/{{ istio_version }}/istio-{{ istio_version }}-linux-{{ system_arch }}.tar.gz"
         dest: /home/vagrant/istio-{{ istio_version }}.tar.gz
-        mode: '0644'
+        mode: "0644"
       when: not istio_dir.stat.exists
       tags:
         - istio
@@ -296,11 +309,11 @@
     - name: Add istioctl to PATH for vagrant user
       lineinfile:
         path: /home/vagrant/.bashrc
-        line: 'export PATH=$PATH:/home/vagrant/istio-{{ istio_version }}/bin'
+        line: "export PATH=$PATH:/home/vagrant/istio-{{ istio_version }}/bin"
         create: yes
         owner: vagrant
         group: vagrant
-        mode: '0644'
+        mode: "0644"
       tags:
         - istio
 
@@ -319,7 +332,7 @@
       copy:
         src: ../files/k8s/istio-config.yaml
         dest: /tmp/istio-config.yaml
-        mode: '0644'
+        mode: "0644"
       tags:
         - istio
 
