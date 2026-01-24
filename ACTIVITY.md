@@ -71,6 +71,7 @@ PR Link: <https://github.com/doda25-team12/operation/pull/11>
   - PR Link : <https://github.com/doda25-team12/model-service/pull/13>
 
 ## Week 9
+- Atharva Dagaonkar (6406947): Fixed documentation issues in README.md - removed references to non-existent local-setup.sh and LOCAL-SETUP.md, corrected Docker image name from app-service to app, removed duplicate content, fixed broken markdown links. Added MODEL_VERSION injection to Kubernetes model-service deployments (stable, canary, shadow) to prevent CrashLoopBackOff errors. Updated API test command to use working Python alternative.
 - Yuvraj Singh Pathania (6495044): Fixed environment variables for GHCR image pull in docker-compose.yml and .env configuration files. Fixed model access path in model-service serve_model.py to properly handle model file paths.
   - PR Link: <https://github.com/doda25-team12/model-service/pull/14>
 - Stilyan Penchev (5749131): Implemented kubernetes connectivity check to the ansible finalization playbook. PR: <https://github.com/doda25-team12/operation/pull/30>

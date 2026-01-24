@@ -36,6 +36,11 @@ spec:
             configMapKeyRef:
               name: app-config
               key: MODEL_INTERNAL_PORT
+        - name: MODEL_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: MODEL_VERSION
         {{- if .Values.persistence.enabled }}
         volumeMounts:
         - name: model-files

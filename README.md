@@ -54,7 +54,7 @@ Container images and model artifacts are **automatically generated** by the mode
 
 **Each automated release includes:**
 - **Docker Images** in GitHub Container Registry (GHCR):
-  - `ghcr.io/doda25-team12/app-service:v{VERSION}`
+  - `ghcr.io/doda25-team12/app:v{VERSION}`
   - `ghcr.io/doda25-team12/model-service:v{VERSION}`
   - Multi-architecture: linux/amd64 and linux/arm64
   - Tagged as `latest` for main branch releases
@@ -201,7 +201,7 @@ HOST_PORT=9090
     ```
 
 5.  **Access the web interface**:
-    Open your browser to [http://localhost:8080/sms](https://www.google.com/search?q=http://localhost:8080/sms)
+    Open your browser to http://localhost:8080/sms
 
 6.  **Stop the application**:
 
@@ -229,12 +229,14 @@ docker compose logs -f
 
 ### Test the Model Service API
 
-While the model-service is not exposed to the host, you can test it via the app-service container:
+While the model-service is not exposed to the host, you can test it via Python inside the model-service container:
 
 ```bash
-docker compose exec app-service curl -X POST http://model-service:8081/predict \
-  -H "Content-Type: application/json" \
-  -d '{"sms": "Congratulations! You won a prize!"}'
+docker compose exec model-service python -c "
+import requests
+r = requests.post('http://localhost:8081/predict', json={'sms': 'Congratulations! You won a prize!'})
+print(r.json())
+"
 ```
 
 Expected response:
@@ -249,7 +251,7 @@ Expected response:
 
 ### Test the Web UI
 
-1.  Navigate to [http://localhost:8080/sms](https://www.google.com/search?q=http://localhost:8080/sms)
+1.  Navigate to http://localhost:8080/sms
 2.  Enter an SMS message (e.g., "Win a free iPhone now\!")
 3.  Click submit
 4.  Verify the classification result is displayed
@@ -533,7 +535,7 @@ kubectl -n kubernetes-dashboard create token admin-user
 
 **4. Login**
 Open this exact URL in your **Host** browser:
-[http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard-web:8000/proxy/](https://www.google.com/search?q=http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard-web:8000/proxy/)
+http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard-web:8000/proxy/
 
 *(If that fails, try the alternative v3 URL: `.../services/https:kubernetes-dashboard-kong-proxy:443/proxy/`)*
 
@@ -846,88 +848,13 @@ Then access:
 - Nginx: http://sms.local
 - Istio: http://sms-istio.local
 
-
-# 7. Access the application
-open [http://sms.local](http://sms.local)           # Nginx Ingress
-open [http://sms-istio.local](http://sms-istio.local)     # Istio Gateway
-```
-
-### Architecture
-
-The Helm chart deploys:
-
-  - **app-service**: Spring Boot frontend (2 replicas)
-  - **model-service**: Flask ML backend (2 replicas)
-  - **Nginx Ingress**: External HTTP access at `sms.local` (192.168.56.95)
-  - **Istio Service Mesh**: Automatic mTLS between services, Gateway at `sms-istio.local` (192.168.56.96)
-  - **Shared Storage**: VirtualBox shared folder for ML model files
-  - **ConfigMaps**: Non-sensitive configuration
-  - **Secrets**: Container registry credentials (placeholder)
-
-### Container Registry Credentials
-
-**Important**: The chart includes a placeholder for container registry credentials. If your GHCR repository is private:
-
-```bash
-# Generate Docker config secret
-kubectl create secret docker-registry temp-secret \
-  --docker-server=ghcr.io \
-  --docker-username=YOUR_GITHUB_USERNAME \
-  --docker-password=YOUR_GITHUB_PAT \
-  --docker-email=YOUR_EMAIL \
-  --dry-run=client -o yaml | grep '\.dockerconfigjson:' | awk '{print $2}'
-
-# Copy output and replace placeholder in k8s/helm-chart/sms-spam-detector/values.yaml
-# OR use --set during installation:
-helm install sms-detector sms-spam-detector --set secrets.dockerConfigJson="<base64-output>"
-```
-
-If GHCR is public, disable image pull secrets in `values.yaml`:
-
-```yaml
-imagePullSecrets:
-  enabled: false
-```
-
-### Verification
-
-```bash
-# Check deployment status
-kubectl get pods -n sms-spam-detection
-kubectl get svc -n sms-spam-detection
-kubectl get ingress -n sms-spam-detection
-
-# Verify Istio sidecar injection (should show 2/2 READY)
-kubectl get pods -n sms-spam-detection
-
-# View logs
-kubectl logs -n sms-spam-detection -l app=app-service -c app-service
-kubectl logs -n sms-spam-detection -l app=model-service -c model-service
-```
-
-### Testing
+### Testing the Application
 
 1.  Access http://sms.local in browser
 2.  Submit spam: "Congratulations\! You won a prize\!"
 3.  Verify classification: "spam"
 4.  Submit ham: "Meeting at 3pm tomorrow"
 5.  Verify classification: "ham"
-
-### Helm Management
-
-```bash
-# Upgrade deployment
-helm upgrade sms-detector k8s/helm-chart/sms-spam-detector
-
-# Rollback to previous version
-helm rollback sms-detector
-
-# View release history
-helm history sms-detector
-
-# Uninstall
-helm uninstall sms-detector
-```
 
 ### Development Environment
 
@@ -952,17 +879,16 @@ See the comprehensive troubleshooting guide in `k8s/helm-chart/sms-spam-detector
 
 For detailed documentation, see:
 
-  - **Helm Chart README**: [k8s/helm-chart/sms-spam-detector/README.md](https://www.google.com/search?q=./k8s/helm-chart/sms-spam-detector/README.md)
-  - **Deployment Plan**: Refer to planning documentation for architecture details
+  - **Helm Chart README**: [k8s/helm-chart/sms-spam-detector/README.md](./k8s/helm-chart/sms-spam-detector/README.md)
 
 ## Additional Resources
 
   - **Frontend Repository**: [doda25-team12/app](https://github.com/doda25-team12/app) - Spring Boot application source
   - **Backend Repository**: [doda25-team12/model-service](https://github.com/doda25-team12/model-service) - ML model service source
   - **Shared Library**: [doda25-team12/lib-version](https://github.com/doda25-team12/lib-version) - Version management
-  - **Docker Compose File**: [docker-compose.yml](https://www.google.com/search?q=./docker-compose.yml) - Service orchestration configuration
-  - **Environment Config**: [.env](https://www.google.com/search?q=./.env) - Configuration parameters
-  - **Helm Chart**: [k8s/helm-chart/sms-spam-detector/](https://www.google.com/search?q=./k8s/helm-chart/sms-spam-detector/) - Kubernetes deployment via Helm
+  - **Docker Compose File**: [docker-compose.yml](./docker-compose.yml) - Service orchestration configuration
+  - **Environment Config**: [.env](./.env) - Configuration parameters
+  - **Helm Chart**: [k8s/helm-chart/sms-spam-detector/](./k8s/helm-chart/sms-spam-detector/) - Kubernetes deployment via Helm
 
 ## Contributing
 
