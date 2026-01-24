@@ -73,4 +73,4 @@ PR Link: <https://github.com/doda25-team12/operation/pull/11>
 ## Week 9
 - Yuvraj Singh Pathania (6495044): Fixed environment variables for GHCR image pull in docker-compose.yml and .env configuration files. Fixed model access path in model-service serve_model.py to properly handle model file paths.
   - PR Link: <https://github.com/doda25-team12/model-service/pull/14>
-- Stilyan Penchev (5749131): Implemented Horizontal Pod Autoscaling for sms-spam-detector. PR: <https://github.com/doda25-team12/operation/pull/28>
+- Stilyan Penchev (5749131): Implemented kubernetes connectivity check to the ansible finalization playbook. PR: <https://github.com/doda25-team12/operation/pull/30>
