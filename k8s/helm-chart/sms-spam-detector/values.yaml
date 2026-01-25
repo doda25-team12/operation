@@ -10,12 +10,17 @@ imagePullPolicy: Always
 imagePullSecrets:
   enabled: false
   name: container-registry-secret
+  # GitHub Container Registry credentials
+  # Set via: helm install ... --set imagePullSecrets.username=YOUR_USER --set imagePullSecrets.password=YOUR_PAT
+  username: ""  # Set to GitHub username
+  password: ""  # Set to GitHub Personal Access Token (PAT)
 
 # Model Service configuration
 modelService:
   enabled: true
   name: model-service
   versionLabel: v1
+  modelVersion: "0.0.1"
   image:
     repository: model-service
     tag: latest
@@ -64,14 +69,14 @@ appService:
   name: app-service
   versionLabel: v1
   image:
-    repository: app
+    repository: app-service
     tag: latest
   replicas: 2
   canary:
     enabled: false
     name: app-service-canary
     image:
-      repository: app
+      repository: app-service
       tag: latest
     replicas: 1
     versionLabel: v2
@@ -165,7 +170,7 @@ secrets:
 # Monitoring Configuration (Prometheus)
 # ========================================
 monitoring:
-  enabled: false
+  enabled: true
   
   # ServiceMonitor configuration for app-service
   appService:
@@ -209,14 +214,10 @@ prometheus:
         limits:
           memory: 2Gi
           cpu: 1000m
-      # Storage configuration`
+      # Storage configuration (emptyDir for clusters without dynamic provisioning)
       storageSpec:
-        volumeClaimTemplate:
-          spec:
-            accessModes: ["ReadWriteOnce"]
-            resources:
-              requests:
-                storage: 10Gi
+        emptyDir:
+          sizeLimit: 10Gi
     ingress:
       enabled: true
       ingressClassName: nginx
@@ -231,7 +232,7 @@ prometheus:
     enabled: true
     adminPassword: "prom-operator"
     persistence:
-      enabled: true
+      enabled: false
       size: 1Gi
     ingress:
       enabled: true
