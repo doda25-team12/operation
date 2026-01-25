@@ -54,7 +54,7 @@ Container images and model artifacts are **automatically generated** by the mode
 
 **Each automated release includes:**
 - **Docker Images** in GitHub Container Registry (GHCR):
-  - `ghcr.io/doda25-team12/app-service:v{VERSION}`
+  - `ghcr.io/doda25-team12/app:v{VERSION}`
   - `ghcr.io/doda25-team12/model-service:v{VERSION}`
   - Multi-architecture: linux/amd64 and linux/arm64
   - Tagged as `latest` for main branch releases
@@ -201,7 +201,7 @@ HOST_PORT=9090
     ```
 
 5.  **Access the web interface**:
-    Open your browser to [http://localhost:8080/sms](https://www.google.com/search?q=http://localhost:8080/sms)
+    Open your browser to http://localhost:8080/sms
 
 6.  **Stop the application**:
 
@@ -229,12 +229,14 @@ docker compose logs -f
 
 ### Test the Model Service API
 
-While the model-service is not exposed to the host, you can test it via the app-service container:
+While the model-service is not exposed to the host, you can test it via Python inside the model-service container:
 
 ```bash
-docker compose exec app-service curl -X POST http://model-service:8081/predict \
-  -H "Content-Type: application/json" \
-  -d '{"sms": "Congratulations! You won a prize!"}'
+docker compose exec model-service python -c "
+import requests
+r = requests.post('http://localhost:8081/predict', json={'sms': 'Congratulations! You won a prize!'})
+print(r.json())
+"
 ```
 
 Expected response:
@@ -249,7 +251,7 @@ Expected response:
 
 ### Test the Web UI
 
-1.  Navigate to [http://localhost:8080/sms](https://www.google.com/search?q=http://localhost:8080/sms)
+1.  Navigate to http://localhost:8080/sms
 2.  Enter an SMS message (e.g., "Win a free iPhone now\!")
 3.  Click submit
 4.  Verify the classification result is displayed
@@ -363,13 +365,9 @@ vagrant ssh ctrl
 kubectl get nodes
 kubectl get pods -A
 
-# 5. Access dashboard (Tunnel Method)
-exit
-vagrant ssh -- -L 8001:127.0.0.1:8001
-# Inside VM:
-sudo systemctl restart systemd-timesyncd
-kubectl proxy
-# On Host: Open http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard-web:8000/proxy/
+# 5. Access dashboard
+# Add to /etc/hosts: 192.168.56.95 dashboard.local
+# Open https://dashboard.local and click "Skip" to login
 ```
 
 ### Prerequisites
@@ -481,9 +479,10 @@ The finalization playbook installs and configures:
       - LoadBalancer IP: `192.168.56.95`
       - Enables Ingress resources for routing
 
-3.  **Kubernetes Dashboard**: Web-based UI for cluster management
+3.  **Kubernetes Dashboard (v2.7.0)**: Web-based UI for cluster management
 
-      - Accessible at: `http://dashboard.local` (requires /etc/hosts entry)
+      - Accessible at: `https://dashboard.local` (requires /etc/hosts entry)
+      - Skip-login enabled - no token required, just click "Skip"
       - Includes admin user with cluster-admin privileges
 
 4.  **Istio (v1.25.2)**: Service mesh for advanced traffic management
@@ -493,49 +492,44 @@ The finalization playbook installs and configures:
 
 ### Step 4: Access the Kubernetes Dashboard
 
-Accessing the dashboard on a local Vagrant cluster requires port forwarding and precise token management.
+The cluster uses Kubernetes Dashboard v2.7.0 with skip-login enabled for easier access.
 
-**1. Create a Secure Tunnel**
-From your Mac/Host terminal, SSH into the Vagrant VM with port forwarding:
+**Method 1: Via Ingress (Recommended)**
 
+Add to your `/etc/hosts`:
 ```bash
-vagrant ssh -- -L 8001:127.0.0.1:8001
+echo "192.168.56.95 dashboard.local" | sudo tee -a /etc/hosts
 ```
 
-**2. Sync Time & Start Proxy (Inside VM)**
-Time drift in VMs often causes "401 Unauthorized" errors. Run these commands inside the `vagrant ssh` session:
+Then open: https://dashboard.local
 
+Click "Skip" on the login page (no token needed).
+
+**Method 2: Via Port Forward**
+
+1. From your Mac, create an SSH tunnel with port forwarding:
 ```bash
-# Force time sync (Crucial for token validity)
-sudo systemctl restart systemd-timesyncd
-
-# Start the proxy (Keep this running)
-kubectl proxy
+vagrant ssh -- -L 8443:127.0.0.1:8443
 ```
 
-**3. Generate Admin Token (Inside VM)**
-Open a **new** terminal window, SSH into vagrant (`vagrant ssh`), and run this block to ensure a fresh, valid admin token:
-
+2. Inside the VM, start port-forward:
 ```bash
-# Create Service Account
-kubectl -n kubernetes-dashboard create serviceaccount admin-user
+kubectl port-forward -n kubernetes-dashboard service/kubernetes-dashboard 8443:443
+```
 
-# Bind to Cluster Admin Role
-kubectl create clusterrolebinding admin-user-binding \
-  --clusterrole=cluster-admin \
-  --serviceaccount=kubernetes-dashboard:admin-user
+3. Open in browser: https://localhost:8443
 
-# Generate Token
+4. Click "Skip" on the login page.
+
+**Note:** Your browser will warn about the self-signed certificate - click "Advanced" and proceed.
+
+**Optional: Using a Token**
+
+If you prefer token authentication:
+```bash
+vagrant ssh ctrl
 kubectl -n kubernetes-dashboard create token admin-user
 ```
-
-*Copy the token output carefully (avoid trailing % symbols).*
-
-**4. Login**
-Open this exact URL in your **Host** browser:
-[http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard-web:8000/proxy/](https://www.google.com/search?q=http://localhost:8001/api/v1/namespaces/kubernetes-dashboard/services/https:kubernetes-dashboard-web:8000/proxy/)
-
-*(If that fails, try the alternative v3 URL: `.../services/https:kubernetes-dashboard-kong-proxy:443/proxy/`)*
 
 ### Running Specific Sections
 
@@ -686,13 +680,14 @@ ping 192.168.56.100
 kubectl logs -n metallb-system -l app=metallb
 ```
 
-**Problem**: Cannot access dashboard (401 Unauthorized or 404)
+**Problem**: Cannot access dashboard (certificate error or connection refused)
 
 **Solution**:
 
-1.  **Check Time**: Run `date` inside Vagrant. If it's incorrect, run `sudo systemctl restart systemd-timesyncd`.
-2.  **Check Proxy**: Ensure you are using `vagrant ssh -- -L 8001:127.0.0.1:8001` and running `kubectl proxy`.
-3.  **Check URL**: Do not use `localhost:8001` directly. Use the full API URL listed in Step 4.
+1.  **Check /etc/hosts**: Ensure `192.168.56.95 dashboard.local` is in your hosts file.
+2.  **Accept certificate warning**: The dashboard uses a self-signed certificate. Click "Advanced" → "Proceed" in your browser.
+3.  **Use Skip button**: Dashboard v2.7.0 has skip-login enabled. Click "Skip" instead of entering a token.
+4.  **Alternative - Port Forward**: If ingress doesn't work, use port-forward method described in Step 4.
 
 ## Deploying SMS Application to Kubernetes with Helm
 
@@ -846,88 +841,13 @@ Then access:
 - Nginx: http://sms.local
 - Istio: http://sms-istio.local
 
-
-# 7. Access the application
-open [http://sms.local](http://sms.local)           # Nginx Ingress
-open [http://sms-istio.local](http://sms-istio.local)     # Istio Gateway
-```
-
-### Architecture
-
-The Helm chart deploys:
-
-  - **app-service**: Spring Boot frontend (2 replicas)
-  - **model-service**: Flask ML backend (2 replicas)
-  - **Nginx Ingress**: External HTTP access at `sms.local` (192.168.56.95)
-  - **Istio Service Mesh**: Automatic mTLS between services, Gateway at `sms-istio.local` (192.168.56.96)
-  - **Shared Storage**: VirtualBox shared folder for ML model files
-  - **ConfigMaps**: Non-sensitive configuration
-  - **Secrets**: Container registry credentials (placeholder)
-
-### Container Registry Credentials
-
-**Important**: The chart includes a placeholder for container registry credentials. If your GHCR repository is private:
-
-```bash
-# Generate Docker config secret
-kubectl create secret docker-registry temp-secret \
-  --docker-server=ghcr.io \
-  --docker-username=YOUR_GITHUB_USERNAME \
-  --docker-password=YOUR_GITHUB_PAT \
-  --docker-email=YOUR_EMAIL \
-  --dry-run=client -o yaml | grep '\.dockerconfigjson:' | awk '{print $2}'
-
-# Copy output and replace placeholder in k8s/helm-chart/sms-spam-detector/values.yaml
-# OR use --set during installation:
-helm install sms-detector sms-spam-detector --set secrets.dockerConfigJson="<base64-output>"
-```
-
-If GHCR is public, disable image pull secrets in `values.yaml`:
-
-```yaml
-imagePullSecrets:
-  enabled: false
-```
-
-### Verification
-
-```bash
-# Check deployment status
-kubectl get pods -n sms-spam-detection
-kubectl get svc -n sms-spam-detection
-kubectl get ingress -n sms-spam-detection
-
-# Verify Istio sidecar injection (should show 2/2 READY)
-kubectl get pods -n sms-spam-detection
-
-# View logs
-kubectl logs -n sms-spam-detection -l app=app-service -c app-service
-kubectl logs -n sms-spam-detection -l app=model-service -c model-service
-```
-
-### Testing
+### Testing the Application
 
 1.  Access http://sms.local in browser
 2.  Submit spam: "Congratulations\! You won a prize\!"
 3.  Verify classification: "spam"
 4.  Submit ham: "Meeting at 3pm tomorrow"
 5.  Verify classification: "ham"
-
-### Helm Management
-
-```bash
-# Upgrade deployment
-helm upgrade sms-detector k8s/helm-chart/sms-spam-detector
-
-# Rollback to previous version
-helm rollback sms-detector
-
-# View release history
-helm history sms-detector
-
-# Uninstall
-helm uninstall sms-detector
-```
 
 ### Development Environment
 
@@ -952,17 +872,16 @@ See the comprehensive troubleshooting guide in `k8s/helm-chart/sms-spam-detector
 
 For detailed documentation, see:
 
-  - **Helm Chart README**: [k8s/helm-chart/sms-spam-detector/README.md](https://www.google.com/search?q=./k8s/helm-chart/sms-spam-detector/README.md)
-  - **Deployment Plan**: Refer to planning documentation for architecture details
+  - **Helm Chart README**: [k8s/helm-chart/sms-spam-detector/README.md](./k8s/helm-chart/sms-spam-detector/README.md)
 
 ## Additional Resources
 
   - **Frontend Repository**: [doda25-team12/app](https://github.com/doda25-team12/app) - Spring Boot application source
   - **Backend Repository**: [doda25-team12/model-service](https://github.com/doda25-team12/model-service) - ML model service source
   - **Shared Library**: [doda25-team12/lib-version](https://github.com/doda25-team12/lib-version) - Version management
-  - **Docker Compose File**: [docker-compose.yml](https://www.google.com/search?q=./docker-compose.yml) - Service orchestration configuration
-  - **Environment Config**: [.env](https://www.google.com/search?q=./.env) - Configuration parameters
-  - **Helm Chart**: [k8s/helm-chart/sms-spam-detector/](https://www.google.com/search?q=./k8s/helm-chart/sms-spam-detector/) - Kubernetes deployment via Helm
+  - **Docker Compose File**: [docker-compose.yml](./docker-compose.yml) - Service orchestration configuration
+  - **Environment Config**: [.env](./.env) - Configuration parameters
+  - **Helm Chart**: [k8s/helm-chart/sms-spam-detector/](./k8s/helm-chart/sms-spam-detector/) - Kubernetes deployment via Helm
 
 ## Contributing
 
