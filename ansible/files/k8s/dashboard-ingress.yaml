@@ -1,4 +1,5 @@
 ---
+# Ingress for Kubernetes Dashboard v2.7.0
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
@@ -17,6 +18,6 @@ spec:
             pathType: Prefix
             backend:
               service:
-                name: kubernetes-dashboard-kong-proxy
+                name: kubernetes-dashboard
                 port:
                   number: 443
