@@ -1,0 +1,223 @@
+# SMS Spam Detection - Complete System Architecture
+# Render: d2 05-system-architecture.d2 05-system-architecture.svg
+
+title: "Complete System Architecture" {
+  near: top-center
+  shape: text
+  style.font-size: 24
+  style.bold: true
+}
+
+# External Zone
+external: "External Zone" {
+  style.fill: "#e3f2fd"
+
+  users: "Users" {
+    shape: person
+  }
+
+  entry: "Entry Points" {
+    nginx: "sms.local\n192.168.56.95" {
+      shape: rectangle
+      style.fill: "#ff9800"
+      style.font-color: white
+    }
+
+    istio: "sms-istio.local\n192.168.56.96" {
+      shape: rectangle
+      style.fill: "#673ab7"
+      style.font-color: white
+    }
+  }
+}
+
+# Kubernetes Cluster
+k8s: "Kubernetes Cluster" {
+  style.fill: "#fafafa"
+  style.stroke: "#1976d2"
+  style.stroke-width: 3
+
+  # Ingress Layer
+  ingress: "Ingress Layer" {
+    style.fill: "#fff3e0"
+
+    nginx: "Nginx\nIngress" {
+      shape: hexagon
+      style.fill: "#ff9800"
+    }
+
+    istio-gw: "Istio\nGateway" {
+      shape: hexagon
+      style.fill: "#673ab7"
+      style.font-color: white
+    }
+  }
+
+  # Application Namespace
+  app-ns: "sms-spam-detection namespace" {
+    style.fill: "#e8f5e9"
+    style.stroke: "#4caf50"
+
+    # Frontend Tier
+    frontend: "Frontend Tier" {
+      style.fill: "#c8e6c9"
+
+      svc: "Service\napp-service:8080" {
+        shape: cylinder
+        style.fill: "#03a9f4"
+        style.font-color: white
+      }
+
+      v1: "app-service (v1)\n2 replicas" {
+        shape: rectangle
+        style.fill: "#4caf50"
+        style.font-color: white
+      }
+
+      v2: "app-service-canary (v2)\n1 replica" {
+        shape: rectangle
+        style.fill: "#ffc107"
+        style.stroke-dash: 3
+      }
+    }
+
+    # Backend Tier
+    backend: "Backend Tier (ML)" {
+      style.fill: "#e0f7fa"
+
+      svc: "Service\nmodel-service:8081" {
+        shape: cylinder
+        style.fill: "#00bcd4"
+        style.font-color: white
+      }
+
+      v1: "model-service (v1)\n2 replicas" {
+        shape: rectangle
+        style.fill: "#00897b"
+        style.font-color: white
+      }
+
+      v2: "model-service-canary (v2)\n1 replica" {
+        shape: rectangle
+        style.fill: "#ffeb3b"
+        style.stroke-dash: 3
+      }
+
+      shadow-pod: "model-service-shadow\n1 replica" {
+        shape: rectangle
+        style.fill: "#9c27b0"
+        style.font-color: white
+        style.stroke-dash: 5
+      }
+    }
+
+    # Config
+    config: "Configuration" {
+      style.fill: "#fce4ec"
+
+      cm: "ConfigMap" {
+        shape: page
+        style.fill: "#e91e63"
+        style.font-color: white
+      }
+
+      secret: "Secret" {
+        shape: page
+        style.fill: "#c2185b"
+        style.font-color: white
+      }
+
+      pvc: "PVC" {
+        shape: cylinder
+        style.fill: "#795548"
+        style.font-color: white
+      }
+    }
+  }
+
+  # Istio System
+  istio-sys: "Istio Traffic Rules" {
+    style.fill: "#ede7f6"
+
+    vs: "VirtualServices" {
+      shape: parallelogram
+      style.fill: "#7c4dff"
+      style.font-color: white
+    }
+
+    dr: "DestinationRules" {
+      shape: parallelogram
+      style.fill: "#536dfe"
+      style.font-color: white
+    }
+  }
+
+  # Monitoring
+  monitoring: "Monitoring (Optional)" {
+    style.fill: "#ffebee"
+    style.stroke-dash: 3
+
+    prom: "Prometheus" {
+      shape: hexagon
+      style.fill: "#e53935"
+      style.font-color: white
+    }
+
+    grafana: "Grafana" {
+      shape: hexagon
+      style.fill: "#fb8c00"
+    }
+
+    alert: "AlertManager" {
+      shape: hexagon
+      style.fill: "#d32f2f"
+      style.font-color: white
+    }
+  }
+
+  # Storage
+  pv: "PV: /mnt/shared/models" {
+    shape: cylinder
+    style.fill: "#607d8b"
+    style.font-color: white
+  }
+}
+
+# External Connections
+external.users -> external.entry.nginx: "HTTP"
+external.users -> external.entry.istio: "HTTP"
+external.entry.nginx -> k8s.ingress.nginx
+external.entry.istio -> k8s.ingress.istio-gw
+
+# Ingress to Services
+k8s.ingress.nginx -> k8s.app-ns.frontend.svc
+k8s.ingress.istio-gw -> k8s.istio-sys.vs
+k8s.istio-sys.vs -> k8s.app-ns.frontend.svc
+k8s.istio-sys.dr -> k8s.app-ns.frontend.svc
+
+# Frontend routing
+k8s.app-ns.frontend.svc -> k8s.app-ns.frontend.v1: "90%" {style.stroke: "#4caf50"; style.stroke-width: 2}
+k8s.app-ns.frontend.svc -> k8s.app-ns.frontend.v2: "10%" {style.stroke: "#ffc107"; style.stroke-width: 2}
+
+# App to Model
+k8s.app-ns.frontend.v1 -> k8s.app-ns.backend.svc: "POST /predict" {style.stroke: "#00bcd4"; style.stroke-width: 2}
+k8s.app-ns.frontend.v2 -> k8s.app-ns.backend.svc: "POST /predict" {style.stroke: "#00bcd4"; style.stroke-width: 2}
+
+# Backend routing
+k8s.app-ns.backend.svc -> k8s.app-ns.backend.v1
+k8s.app-ns.backend.svc -> k8s.app-ns.backend.v2
+k8s.app-ns.backend.v1 -> k8s.app-ns.backend.shadow-pod: "mirror" {style.stroke-dash: 5; style.stroke: "#9c27b0"}
+
+# Config
+k8s.app-ns.config.cm -> k8s.app-ns.frontend.v1: "env" {style.stroke-dash: 3; style.stroke: "#e91e63"}
+k8s.app-ns.config.cm -> k8s.app-ns.backend.v1: "env" {style.stroke-dash: 3; style.stroke: "#e91e63"}
+
+# Storage
+k8s.app-ns.config.pvc -> k8s.pv
+k8s.app-ns.backend.v1 -> k8s.app-ns.config.pvc: "mount" {style.stroke-dash: 3}
+
+# Monitoring
+k8s.monitoring.prom -> k8s.app-ns.frontend.svc: "scrape" {style.stroke-dash: 3; style.stroke: "#e53935"}
+k8s.monitoring.prom -> k8s.app-ns.backend.svc: "scrape" {style.stroke-dash: 3; style.stroke: "#e53935"}
+k8s.monitoring.prom -> k8s.monitoring.alert: "alerts"
+k8s.monitoring.prom -> k8s.monitoring.grafana: "data"

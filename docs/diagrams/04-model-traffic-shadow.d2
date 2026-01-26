@@ -1,0 +1,130 @@
+# SMS Spam Detection - Model Service Traffic with Shadow Deployment
+# Render: d2 04-model-traffic-shadow.d2 04-model-traffic-shadow.svg
+
+title: "Model Service Traffic Routing with Shadow Deployment" {
+  near: top-center
+  shape: text
+  style.font-size: 24
+  style.bold: true
+}
+
+direction: down
+
+# App Services
+apps: "App Service Pods" {
+  style.fill: "#e8f5e9"
+
+  app-stable: "App Service (v1)\nStable" {
+    shape: rectangle
+    style.fill: "#4caf50"
+    style.font-color: white
+    width: 180
+  }
+
+  app-canary: "App Service (v2)\nCanary" {
+    shape: rectangle
+    style.fill: "#ffc107"
+    width: 180
+  }
+}
+
+# VirtualService
+model-vs: "VirtualService: model-service-vs" {
+  style.fill: "#ede7f6"
+  style.stroke: "#7c4dff"
+  style.stroke-width: 2
+
+  rules: |md
+    **Routing Rules:**
+
+    1. **Source: app-service v2**
+       -> Destination: model-service v2
+
+    2. **Default (from v1):**
+       -> Destination: model-service v1
+       -> Mirror to: v-shadow (100%)
+  |
+}
+
+# Model Services
+models: "Model Service Pods" {
+  style.fill: "#e1f5fe"
+
+  model-stable: "Model Service (v1)\nStable" {
+    shape: rectangle
+    style.fill: "#00897b"
+    style.font-color: white
+    width: 180
+  }
+
+  model-canary: "Model Service (v2)\nCanary" {
+    shape: rectangle
+    style.fill: "#ffeb3b"
+    width: 180
+  }
+
+  model-shadow: "Model Service (v-shadow)\nShadow" {
+    shape: rectangle
+    style.fill: "#9c27b0"
+    style.font-color: white
+    width: 180
+  }
+}
+
+# Notes
+note-stable: "Returns response\nto user" {
+  shape: text
+  style.font-size: 12
+  style.font-color: "#666"
+}
+
+note-canary: "New model version\nfor A/B testing" {
+  shape: text
+  style.font-size: 12
+  style.font-color: "#666"
+}
+
+note-shadow: "Receives mirrored traffic\nResponse discarded\nUsed for evaluation" {
+  shape: text
+  style.font-size: 12
+  style.font-color: "#666"
+}
+
+# Mirror explanation
+mirror-box: "Shadow Mirroring" {
+  style.fill: "#f3e5f5"
+  style.stroke: "#9c27b0"
+  style.stroke-width: 2
+
+  explanation: |md
+    **Configuration:**
+    ```yaml
+    modelService:
+      shadow:
+        enabled: true
+        mirrorPercentage: 100
+    ```
+
+    **Purpose:**
+    - Evaluate new model without affecting users
+    - Compare metrics: stable vs shadow
+    - Shadow responses are discarded
+  |
+}
+
+# Connections
+apps.app-stable -> model-vs: "POST /predict" {style.stroke: "#4caf50"; style.stroke-width: 2}
+apps.app-canary -> model-vs: "POST /predict" {style.stroke: "#ffc107"; style.stroke-width: 2}
+
+model-vs -> models.model-stable: "v1 traffic" {style.stroke: "#00897b"; style.stroke-width: 2}
+model-vs -> models.model-canary: "v2 traffic\n(from canary app)" {style.stroke: "#ffeb3b"; style.stroke-width: 2}
+
+models.model-stable -> models.model-shadow: "mirror 100%" {
+  style.stroke: "#9c27b0"
+  style.stroke-width: 3
+  style.stroke-dash: 5
+}
+
+models.model-stable -> note-stable: "" {style.stroke-dash: 5; style.stroke: "#999"}
+models.model-canary -> note-canary: "" {style.stroke-dash: 5; style.stroke: "#999"}
+models.model-shadow -> note-shadow: "" {style.stroke-dash: 5; style.stroke: "#999"}

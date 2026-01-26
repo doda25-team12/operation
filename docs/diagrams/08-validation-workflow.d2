@@ -1,0 +1,119 @@
+# Configuration Validation - Workflow
+# Render: d2 08-validation-workflow.d2 08-validation-workflow.svg
+
+title: "Validation Workflow" {
+  near: top-center
+  shape: text
+  style.font-size: 24
+  style.bold: true
+}
+
+direction: down
+
+# Developer
+dev: "Developer" {
+  shape: person
+  style.fill: "#e3f2fd"
+}
+
+# Step 1
+step1: "1. Edit Configuration" {
+  style.fill: "#fff3e0"
+  style.stroke: "#ff9800"
+
+  files: |md
+    Modified files:
+    - values.yaml
+    - .env
+    - templates/*.yaml
+  |
+}
+
+# Step 2
+step2: "2. Run Validation" {
+  style.fill: "#e8f5e9"
+  style.stroke: "#4caf50"
+  style.stroke-width: 2
+
+  cmd: "bash k8s/validation/validate-config.sh" {
+    shape: rectangle
+    style.fill: "#4caf50"
+    style.font-color: white
+  }
+}
+
+# Step 3
+step3: "3. Pre-deployment Check" {
+  style.fill: "#e1f5fe"
+  style.stroke: "#03a9f4"
+  style.stroke-width: 2
+
+  cmd: "bash k8s/validation/pre-deployment-check.sh" {
+    shape: rectangle
+    style.fill: "#03a9f4"
+    style.font-color: white
+  }
+
+  includes: |md
+    Includes:
+    - Validation (6 layers)
+    - helm lint
+    - kubectl --dry-run
+  |
+}
+
+# Decision
+decision: "All Checks Pass?" {
+  shape: diamond
+  style.fill: "#ffeb3b"
+  width: 160
+  height: 80
+}
+
+# Fix Path
+fix: "4a. Fix Errors" {
+  style.fill: "#ffebee"
+  style.stroke: "#f44336"
+
+  action: "Review error messages\nUpdate configuration" {
+    shape: rectangle
+    style.fill: "#ef5350"
+    style.font-color: white
+  }
+}
+
+# Deploy Path
+deploy: "4b. Deploy" {
+  style.fill: "#e8f5e9"
+  style.stroke: "#4caf50"
+  style.stroke-width: 2
+
+  cmd: |md
+    ```bash
+    helm install sms-detector \
+      k8s/helm-chart/sms-spam-detector \
+      -n sms-spam-detection \
+      --create-namespace
+    ```
+  |
+}
+
+# Success
+success: "Deployment Complete" {
+  shape: rectangle
+  style.fill: "#4caf50"
+  style.font-color: white
+  style.double-border: true
+}
+
+# Connections
+dev -> step1
+step1 -> step2
+step2 -> step3
+step3 -> decision
+
+decision -> fix: "No" {style.stroke: "#f44336"; style.stroke-width: 2}
+decision -> deploy: "Yes" {style.stroke: "#4caf50"; style.stroke-width: 2}
+
+fix -> step1: "retry" {style.stroke-dash: 3; style.stroke: "#f44336"}
+deploy -> success
