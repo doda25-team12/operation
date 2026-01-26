@@ -12,8 +12,18 @@ imagePullSecrets:
   name: container-registry-secret
   # GitHub Container Registry credentials
   # Set via: helm install ... --set imagePullSecrets.username=YOUR_USER --set imagePullSecrets.password=YOUR_PAT
-  username: ""  # Set to GitHub username
-  password: ""  # Set to GitHub Personal Access Token (PAT)
+  username: "" # Set to GitHub username
+  password: "" # Set to GitHub Personal Access Token (PAT)
+
+# Resource Quota for the namespace
+quota:
+  enabled: true
+  requests:
+    cpu: "2"
+    memory: "4Gi"
+  limits:
+    cpu: "4"
+    memory: "8Gi"
 
 # Model Service configuration
 modelService:
@@ -104,7 +114,7 @@ appService:
 # Persistent storage for ML models
 persistence:
   enabled: true
-  storageType: hostPath  # Options: hostPath, nfs
+  storageType: hostPath # Options: hostPath, nfs
   hostPath:
     path: /mnt/shared/models
   accessMode: ReadOnlyMany
@@ -173,7 +183,7 @@ secrets:
 # ========================================
 monitoring:
   enabled: true
-  
+
   # ServiceMonitor configuration for app-service
   appService:
     enabled: true
@@ -181,7 +191,7 @@ monitoring:
     port: http
     interval: 15s
     scrapeTimeout: 10s
-    
+
   # ServiceMonitor configuration for model-service
   modelService:
     enabled: true
@@ -197,7 +207,7 @@ prometheus:
   # Enable the Prometheus Operator
   prometheusOperator:
     enabled: true
-    
+
   # Prometheus server configuration
   prometheus:
     enabled: true
@@ -229,7 +239,7 @@ prometheus:
         - /
       annotations:
         nginx.ingress.kubernetes.io/ssl-redirect: "false"
-  
+
   grafana:
     enabled: true
     adminPassword: "prom-operator"
@@ -244,7 +254,7 @@ prometheus:
         - grafana.local
       annotations:
         nginx.ingress.kubernetes.io/ssl-redirect: "false"
-  
+
   # AlertManager configuration
   alertmanager:
     enabled: true
@@ -271,11 +281,11 @@ alertmanagerConfig:
   name: sms-alertmanager-config
   # Reference the secret where all SMTP info is stored
   smtpSecretName: alertmanager-email-secret
-  smtpPasswordKey: authPassword  # key inside the secret for password
-  smtpUsernameKey: authUsername  # key inside the secret for username
-  smtpSmarthostKey: smarthost     # key inside the secret for smarthost
-  smtpFromKey: from               # key inside the secret for 'from' field
-  smtpToKey: to                   # key inside the secret for 'to' field
+  smtpPasswordKey: authPassword # key inside the secret for password
+  smtpUsernameKey: authUsername # key inside the secret for username
+  smtpSmarthostKey: smarthost # key inside the secret for smarthost
+  smtpFromKey: from # key inside the secret for 'from' field
+  smtpToKey: to # key inside the secret for 'to' field
 
 # PrometheusRule for alerting
 prometheusRule:
@@ -287,7 +297,6 @@ prometheusRule:
   threshold_requests_per_minute: 15
   duration_minutes: 2
 
-  
   # Disable components we don't need
   kubeStateMetrics:
     enabled: true
