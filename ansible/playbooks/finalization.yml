@@ -176,45 +176,52 @@
     # ==========================================
     # SECTION 3: INSTALL KUBERNETES DASHBOARD
     # ==========================================
-    - name: Add Kubernetes Dashboard Helm repository
-      become_user: vagrant
-      command: >
-        helm repo add kubernetes-dashboard https://kubernetes.github.io/dashboard/
-      environment:
-        KUBECONFIG: /home/vagrant/.kube/config
-      register: dashboard_repo_add
-      changed_when: "'already exists' not in dashboard_repo_add.stderr"
-      failed_when: dashboard_repo_add.rc != 0 and 'already exists' not in dashboard_repo_add.stderr
-      tags:
-        - dashboard
+    # Note: Using Dashboard v2.7.0 (not v7/Helm) because v7 removed
+    # the skip-login feature and has bearer token authentication issues.
+    # See: https://github.com/kubernetes/dashboard/issues/9247
 
-    - name: Update Helm repositories
+    - name: Check if Kubernetes Dashboard namespace exists
       become_user: vagrant
-      command: helm repo update
+      command: kubectl get namespace kubernetes-dashboard
       environment:
         KUBECONFIG: /home/vagrant/.kube/config
-      tags:
-        - dashboard
-
-    - name: Check if Kubernetes Dashboard is already installed
-      become_user: vagrant
-      command: helm list -n kubernetes-dashboard
-      environment:
-        KUBECONFIG: /home/vagrant/.kube/config
-      register: dashboard_installed
+      register: dashboard_ns_check
+      failed_when: false
       changed_when: false
       tags:
         - dashboard
 
-    - name: Install Kubernetes Dashboard with Helm
+    - name: Install Kubernetes Dashboard v2.7.0
       become_user: vagrant
-      command: >
-        helm install kubernetes-dashboard kubernetes-dashboard/kubernetes-dashboard
-        --namespace kubernetes-dashboard
-        --create-namespace
+      command: kubectl apply -f https://raw.githubusercontent.com/kubernetes/dashboard/v2.7.0/aio/deploy/recommended.yaml
       environment:
         KUBECONFIG: /home/vagrant/.kube/config
-      when: "'kubernetes-dashboard' not in dashboard_installed.stdout"
+      when: dashboard_ns_check.rc != 0
+      tags:
+        - dashboard
+
+    - name: Wait for Dashboard deployment to be ready
+      become_user: vagrant
+      command: >
+        kubectl wait -n kubernetes-dashboard
+        --for=condition=available deployment/kubernetes-dashboard
+        --timeout=120s
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      tags:
+        - dashboard
+
+    - name: Enable skip-login on Dashboard
+      become_user: vagrant
+      command: >
+        kubectl patch deployment kubernetes-dashboard -n kubernetes-dashboard
+        --type='json'
+        -p='[{"op": "add", "path": "/spec/template/spec/containers/0/args/-", "value": "--enable-skip-login"}]'
+      environment:
+        KUBECONFIG: /home/vagrant/.kube/config
+      register: patch_result
+      failed_when: false
+      changed_when: patch_result.rc == 0
       tags:
         - dashboard
 
@@ -250,22 +257,24 @@
       tags:
         - dashboard
 
-    - name: Display instructions to get Dashboard token
+    - name: Display instructions for Dashboard access
       debug:
         msg: |
           ============================================
-          Kubernetes Dashboard Setup Complete!
+          Kubernetes Dashboard v2.7.0 Setup Complete!
           ============================================
 
-          Access the dashboard at: http://{{ dashboard_domain }}
+          Skip-login is ENABLED - no token required!
+
+          Access the dashboard at: https://{{ dashboard_domain }}
           (Add "{{ ingress_nginx_ip }} {{ dashboard_domain }}" to your /etc/hosts)
 
-          To get the login token, run:
-          kubectl -n kubernetes-dashboard create token admin-user
+          Click "Skip" on the login page to access the dashboard.
 
-          Or from the controller VM:
-          vagrant ssh ctrl
-          kubectl -n kubernetes-dashboard create token admin-user
+          Alternative: Port Forward Method
+          1. vagrant ssh -- -L 8443:127.0.0.1:8443
+          2. Inside VM: kubectl port-forward -n kubernetes-dashboard service/kubernetes-dashboard 8443:443
+          3. Open: https://localhost:8443
           ============================================
       tags:
         - dashboard
@@ -377,13 +386,11 @@
           Nginx Ingress IP: {{ ingress_nginx_ip }}
           Istio Gateway IP: {{ istio_gateway_ip }}
 
-          Dashboard URL: http://{{ dashboard_domain }}
+          Dashboard URL: https://{{ dashboard_domain }}
+          (Skip-login enabled - just click "Skip" to access)
 
           Add to your /etc/hosts:
           {{ ingress_nginx_ip }} {{ dashboard_domain }}
-
-          To get Dashboard token:
-          kubectl -n kubernetes-dashboard create token admin-user
           ============================================
       tags:
         - summary
