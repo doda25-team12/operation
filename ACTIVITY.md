@@ -63,18 +63,21 @@ PR Link: <https://github.com/doda25-team12/operation/pull/11>
 - Atharva Dagaonkar (6406947): (A4 Extension Proposal) Designed and implemented Configuration Validation Framework with 6-layer validation system (JSON schema, port consistency, image tag coherence, version labels, ConfigMap completeness, environment variables). Created validation scripts (validate-config.sh, pre-deployment-check.sh), JSON schema for values.yaml, and test suite with 3 test cases. Fixed critical bug: added MODEL_VERSION injection to ConfigMap template preventing CrashLoopBackOff errors. PR: <https://github.com/doda25-team12/operation/pull/25>
 - Yuvraj Singh Pathania (6495044): Implemented Additional Use Case for Istio by implementing shadow launch for model-service including shadow deployment template, traffic mirroring and documentation updates. PR: <https://github.com/doda25-team12/operation/pull/21>
 - Stilyan Penchev (5749131): (A4) Added improvments to the late rimiting from the previous week. Namely ingress rate-limiting knobs for rps, connections and status code. PR: <https://github.com/doda25-team12/operation/pull/20>
+- Andrei Paduraru (5774489): Added Grafana dashboards <https://github.com/doda25-team12/operation/pull/22>
 
 ## Week 8
 
 - Atharva Dagaonkar (6406947): (A4 Extension Proposal) Completed Configuration Validation Framework implementation. Integrated GitHub Actions CI/CD workflow for automated PR validation. Created comprehensive documentation (EXTENSION_PROPOSAL.md) including usage guide, verification steps, troubleshooting, and rollout strategy. Fixed Helm chart defaults (disabled CRD-dependent features) and template reference errors. Branch: feature/configuration-validation-framework, PR: <https://github.com/doda25-team12/operation/pull/25>
 - Yuvraj Singh Pathania (6495044): For model-service - Implemented production-standard code linting using Ruff. Added lint checks to train-release and release-container CI/CD pipelines. Fixed 126 linting errors and resolved pickle deserialization bug caused by removed imports.
   - PR Link : <https://github.com/doda25-team12/model-service/pull/13>
+- Andrei Paduraru (5774489): Added Grafana and Prometheus to Docker <https://github.com/doda25-team12/operation/pull/27>
 
 ## Week 9
 - Atharva Dagaonkar (6406947): Fixed documentation issues in README.md - removed references to non-existent local-setup.sh and LOCAL-SETUP.md, corrected Docker image name from app-service to app, removed duplicate content, fixed broken markdown links. Added MODEL_VERSION injection to Kubernetes model-service deployments (stable, canary, shadow) to prevent CrashLoopBackOff errors. Updated API test command to use working Python alternative.
 - Yuvraj Singh Pathania (6495044): Fixed environment variables for GHCR image pull in docker-compose.yml and .env configuration files. Fixed model access path in model-service serve_model.py to properly handle model file paths.
   - PR Link: <https://github.com/doda25-team12/model-service/pull/14>
 - Stilyan Penchev (5749131): Implemented kubernetes connectivity check to the ansible finalization playbook. PR: <https://github.com/doda25-team12/operation/pull/30>
+- Andrei Paduraru (5774489): Fixed Helm <https://github.com/doda25-team12/operation/pull/33>
 
 ## Week 10
 - Yuvraj Singh Pathania (6495044): Fixed critical issues preventing model-service from functioning correctly in Kubernetes deployment(resolve model-service preprocessor path) as well as tested everything end to end to make sure that the istio service mesh is active along with the prometheus setup
