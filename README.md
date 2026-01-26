@@ -25,7 +25,7 @@ helm install sms-detector k8s/helm-chart/sms-spam-detector -n sms-spam-detection
 **What it catches:**
 - ✓ Port mismatches between `.env` and `values.yaml`
 - ✓ Canary/shadow image tag conflicts
-- ✓ Missing MODEL_VERSION environment variable
+- ✓ Missing MODEL_VERSION_ENV environment variable
 - ✓ URL construction errors
 - ✓ Invalid Helm chart syntax
 
@@ -54,13 +54,14 @@ Container images and model artifacts are **automatically generated** by the mode
 
 **Each automated release includes:**
 - **Docker Images** in GitHub Container Registry (GHCR):
-  - `ghcr.io/doda25-team12/app-service:v{VERSION}`
-  - `ghcr.io/doda25-team12/model-service:v{VERSION}`
+  - `ghcr.io/doda25-team12/app:${VERSION}` (note: image name is `app`, not `app-service`)
+  - `ghcr.io/doda25-team12/model-service:${VERSION}`
   - Multi-architecture: linux/amd64 and linux/arm64
   - Tagged as `latest` for main branch releases
+  - Note: `VERSION` should include the `v` prefix (e.g., `v1.0.2`) or use `latest`
 
 - **Model Files** in [GitHub Releases](https://github.com/doda25-team12/model-service/releases):
-  - `model-{VERSION}.joblib` (trained Decision Tree classifier)
+  - `model-{MODEL_VERSION_ENV}.joblib` (trained Decision Tree classifier, version from `MODEL_VERSION_ENV`)
   - `preprocessor.joblib` (text preprocessing pipeline)
 
 ### Using Latest Versions
@@ -85,11 +86,15 @@ To pin to a specific release version:
 ```bash
 # Update .env
 VERSION=v1.0.2
+# Optionally set APP_VERSION to use a different tag for app-service
+# APP_VERSION=fix-image-pipeline  # Falls back to VERSION if not set
 
 # Pull specific version
 docker compose pull
 docker compose up -d
 ```
+
+**Note**: The `app-service` uses `APP_VERSION` if set, otherwise falls back to `VERSION`. The `model-service` always uses `VERSION`.
 
 ### Manual Training (Optional)
 
@@ -100,12 +105,12 @@ While automated releases provide pre-trained models and container images, you ca
 1. **Docker Desktop**: Install from [docker.com](https://www.docker.com/)
 2. **Model Files**: The model-service requires trained ML model files. You have two options:
    - **Option A (Volume Mount)**: Place model files in the `models/` directory (see "Preparing Model Files" below)
-   - **Option B (Download)**: Configure `MODEL_VERSION` and `MODEL_BASE_URL` environment variables for automatic download
+   - **Option B (Download)**: Configure `MODEL_VERSION_ENV` and `MODEL_BASE_URL` environment variables for automatic download
 
 ## Preparing Model Files
 
 The model-service expects the following files:
-- `model-{VERSION}.joblib` - Trained decision tree classifier
+- `model-{MODEL_VERSION_ENV}.joblib` - Trained decision tree classifier (version must match `MODEL_VERSION_ENV` in `.env`)
 - `preprocessor.joblib` - Text preprocessing pipeline
 
 ### Training Models Locally
@@ -144,9 +149,11 @@ If you want to train models from scratch:
 If pre-trained models are available from a release URL, configure the download in `.env`:
 
 ```bash
-MODEL_VERSION=0.0.1
-MODEL_BASE_URL=[https://github.com/doda25-team12/model-service/releases/download](https://github.com/doda25-team12/model-service/releases/download)
+MODEL_VERSION_ENV=1.0.2
+MODEL_BASE_URL=https://github.com/doda25-team12/model-service/releases/download
 ```
+
+**Note**: `MODEL_VERSION_ENV` is the environment variable used by the container (not `MODEL_VERSION`). The model file should be named `model-{MODEL_VERSION_ENV}.joblib`.
 
 ## Configuration
 
@@ -158,8 +165,9 @@ All configuration is managed through the `.env` file:
 | `APP_INTERNAL_PORT` | Internal port for app-service | 8080 | No |
 | `MODEL_INTERNAL_PORT` | Internal port for model-service | 8081 | No |
 | `ORG_NAME` | GitHub organization for container images | doda25-team12 | Yes |
-| `VERSION` | Docker image tag to use | latest | Yes |
-| `MODEL_VERSION` | Model version for file naming | - | Yes (if using download) |
+| `VERSION` | Docker image tag to use (include `v` prefix, e.g., `v1.0.2` or `latest`) | latest | Yes |
+| `APP_VERSION` | Docker image tag for app-service (falls back to `VERSION` if not set) | - | No |
+| `MODEL_VERSION_ENV` | Model version for file naming (used by container, file should be `model-{MODEL_VERSION_ENV}.joblib`) | 1.0.2 | Yes (if using download) |
 | `MODEL_BASE_URL` | Base URL for downloading model files | - | Yes (if using download) |
 
 ### Customizing Ports
@@ -275,8 +283,8 @@ docker compose logs model-service
 
 Ensure either:
 
-  - Model files exist in `models/` directory, OR
-  - `MODEL_VERSION` and `MODEL_BASE_URL` are set in `.env`
+  - Model files exist in `models/` directory (named `model-{MODEL_VERSION_ENV}.joblib`), OR
+  - `MODEL_VERSION_ENV` and `MODEL_BASE_URL` are set in `.env`
 
 ### Port conflict
 
@@ -302,7 +310,7 @@ Ensure either:
 
 1.  Check model-service logs: `docker compose logs model-service`
 2.  Verify model files are valid `.joblib` files
-3.  Ensure `MODEL_VERSION` matches the model filename
+3.  Ensure `MODEL_VERSION_ENV` matches the model filename (file should be `model-{MODEL_VERSION_ENV}.joblib`)
 
 ## Development and Maintenance
 

@@ -26,6 +26,32 @@ spec:
       - name: {{ .Values.modelService.name }}
         image: {{ include "sms-spam-detector.modelService.image" . }}
         imagePullPolicy: {{ .Values.imagePullPolicy }}
+        command: ["sh", "-c"]
+        args:
+        - |
+          pip install --force-reinstall --no-cache-dir rpds-py regex numpy scipy scikit-learn pandas && 
+          mkdir -p /app/output && 
+          python -c "
+          import sys
+          import os
+          sys.path.insert(0, '/app/src')
+          # Trigger download by importing serve_model (it downloads at import time)
+          import serve_model
+          import time
+          import shutil
+          # Wait for file to be downloaded (with timeout)
+          max_wait = 30
+          waited = 0
+          while not os.path.exists('/models/preprocessor.joblib') and waited < max_wait:
+              time.sleep(0.5)
+              waited += 0.5
+          if os.path.exists('/models/preprocessor.joblib'):
+              shutil.copy('/models/preprocessor.joblib', '/app/output/preprocessor.joblib')
+              print('[init] Copied preprocessor to /app/output/')
+          else:
+              print('[init] Warning: preprocessor not found after waiting')
+          " && 
+          python src/serve_model.py
         ports:
         - containerPort: {{ .Values.modelService.service.port }}
           name: http
@@ -36,12 +62,26 @@ spec:
             configMapKeyRef:
               name: app-config
               key: MODEL_INTERNAL_PORT
+        - name: MODEL_VERSION
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: MODEL_VERSION
+        - name: MODEL_BASE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: MODEL_BASE_URL
+        - name: MODEL_SERVICE_PORT
+          value: "8081"
         {{- if .Values.persistence.enabled }}
         volumeMounts:
         - name: model-files
-          mountPath: /models
+          mountPath: /models-readonly
           readOnly: true
         {{- end }}
+        - name: model-downloads
+          mountPath: /models
         resources:
           {{- toYaml .Values.modelService.resources | nindent 10 }}
         {{- if .Values.modelService.livenessProbe.enabled }}
@@ -66,4 +106,6 @@ spec:
         persistentVolumeClaim:
           claimName: model-files-pvc
       {{- end }}
+      - name: model-downloads
+        emptyDir: {}
 {{- end }}
