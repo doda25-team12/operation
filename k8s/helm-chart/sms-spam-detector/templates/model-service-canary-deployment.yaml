@@ -39,7 +39,10 @@ spec:
               name: app-config
               key: MODEL_INTERNAL_PORT
         - name: MODEL_VERSION
-          value: {{ .Values.modelService.modelVersion | quote }}
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: MODEL_VERSION
         {{- if .Values.persistence.enabled }}
         volumeMounts:
         - name: model-files
