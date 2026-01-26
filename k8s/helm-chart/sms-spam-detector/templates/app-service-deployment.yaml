@@ -36,6 +36,11 @@ spec:
             configMapKeyRef:
               name: app-config
               key: APP_INTERNAL_PORT
+        - name: MODEL_SERVICE_URL
+          valueFrom:
+            configMapKeyRef:
+              name: app-config
+              key: MODEL_SERVICE_URL
         - name: MODEL_HOST
           valueFrom:
             configMapKeyRef:

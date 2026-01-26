@@ -150,6 +150,8 @@ config:
   appInternalPort: "8080"
   modelInternalPort: "8081"
   modelServiceUrl: "http://model-service:8081"
+  modelBaseUrl: "https://github.com/doda25-team12/model-service/releases/download"
+  modelVersion: "1.0.2"
 
 # Secret placeholders
 secrets:

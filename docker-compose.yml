@@ -15,6 +15,9 @@ services:
     volumes:
       - ./models:/models
 
+    # Fix architecture mismatch by reinstalling packages with compiled extensions for current platform
+    command: sh -c "pip install --force-reinstall --no-cache-dir rpds-py regex numpy scipy scikit-learn pandas && python src/serve_model.py"
+
     # restart policy based on grading criteria
     restart: unless-stopped
 
