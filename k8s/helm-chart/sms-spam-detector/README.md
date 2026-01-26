@@ -2,6 +2,146 @@
 
 This Helm chart deploys the SMS Spam Detection application to Kubernetes with both Nginx Ingress and Istio service mesh support, along with Prometheus monitoring.
 
+## Quick Start - Installation via Helm
+
+### Prerequisites
+
+Before installing, ensure you have:
+- A running Kubernetes cluster (via Vagrant: `vagrant up`)
+- `kubectl` configured with kubeconfig
+- `helm` 3.x installed
+
+### Step 1: Set Environment
+
+```bash
+# From the operation directory
+cd /home/andrei00001111/Desktop/CS4295/Assignment/operation
+
+# Set kubeconfig
+export KUBECONFIG=$(pwd)/kubeconfig
+
+# Verify cluster is running
+kubectl get nodes  # Should show 3 nodes: ctrl, node-1, node-2
+```
+
+### Step 2: Update Helm Dependencies
+
+```bash
+helm dependency update k8s/helm-chart/sms-spam-detector
+```
+
+### Step 3a: Install WITHOUT Private Image Authentication (For Testing)
+
+```bash
+# Basic install (no monitoring, uses latest public images)
+helm install sms-detector k8s/helm-chart/sms-spam-detector \
+  -n sms-spam-detection \
+  --create-namespace
+```
+
+### Step 3b: Install WITH GitHub Container Registry Access (Production)
+
+If you have access to the private GHCR images, provide your credentials:
+
+```bash
+# Option A: Via command line
+helm install sms-detector k8s/helm-chart/sms-spam-detector \
+  -n sms-spam-detection \
+  --create-namespace \
+  --set imagePullSecrets.enabled=true \
+  --set imagePullSecrets.username=YOUR_GITHUB_USERNAME \
+  --set imagePullSecrets.password=YOUR_GITHUB_PAT
+
+# Option B: Via environment variables
+export GITHUB_USERNAME=your_github_username
+export GITHUB_PAT=your_github_personal_access_token
+
+helm install sms-detector k8s/helm-chart/sms-spam-detector \
+  -n sms-spam-detection \
+  --create-namespace \
+  --set imagePullSecrets.enabled=true \
+  --set imagePullSecrets.username=$GITHUB_USERNAME \
+  --set imagePullSecrets.password=$GITHUB_PAT
+```
+
+**Note:** Generate a PAT at https://github.com/settings/tokens with `read:packages` scope.
+
+### Step 4: Verify Installation
+
+```bash
+# Check pods
+kubectl get pods -n sms-spam-detection
+
+# Check services and ingress
+kubectl get svc,ingress -n sms-spam-detection
+
+# Check ServiceMonitors (for Prometheus scraping)
+kubectl get servicemonitors -n sms-spam-detection
+
+# View helm release status
+helm status sms-detector -n sms-spam-detection
+```
+
+### Step 5: Access Services
+
+Add these to your `/etc/hosts` (or configure DNS):
+
+```
+192.168.56.100 sms.local prometheus.local grafana.local alertmanager.local
+```
+
+Then access:
+- **App**: http://sms.local
+- **Prometheus**: http://prometheus.local
+- **Grafana**: http://grafana.local (default: admin/prom-operator)
+- **AlertManager**: http://alertmanager.local
+
+### Monitoring & Metrics
+
+The chart automatically deploys:
+-  **Prometheus** - Scrapes metrics from both services via ServiceMonitors
+-  **Grafana** - Pre-configured with Prometheus datasource
+-  **AlertManager** - For alerting on metric thresholds
+-  **ServiceMonitors** - Auto-discover metrics from app-service and model-service at `/metrics`
+
+Verify ServiceMonitors:
+```bash
+kubectl describe servicemonitor app-service-monitor -n sms-spam-detection
+kubectl describe servicemonitor model-service-monitor -n sms-spam-detection
+```
+
+### Configuration
+
+Key values you can override:
+
+```bash
+helm install sms-detector k8s/helm-chart/sms-spam-detector \
+  -n sms-spam-detection \
+  --create-namespace \
+  --set appService.replicas=2 \
+  --set modelService.replicas=2 \
+  --set modelService.modelVersion=0.0.1 \
+  --set ingress.host=your-domain.com
+```
+
+See `values.yaml` for all available configuration options.
+
+### Troubleshooting
+
+**ImagePullBackOff Error:**
+- Application images are in private GitHub Container Registry
+- Provide credentials via `--set imagePullSecrets.enabled=true --set imagePullSecrets.username=... --set imagePullSecrets.password=...`
+
+**Pods in CrashLoopBackOff:**
+- Check logs: `kubectl logs -n sms-spam-detection <pod-name>`
+- Verify MODEL_VERSION environment variable is set in model-service pods
+
+**Services not accessible via ingress:**
+- Verify Nginx Ingress Controller is running: `kubectl get pods -n ingress-nginx`
+- Check ingress configuration: `kubectl describe ingress sms-app-ingress -n sms-spam-detection`
+
+---
+
 ## Architecture
 
 - **Frontend**: Spring Boot web application (app-service)

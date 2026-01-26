@@ -1,0 +1,15 @@
+# Custom values to enable monitoring without persistence issues
+monitoring:
+  enabled: true
+
+# Disable persistence for Prometheus and Grafana
+# (Required for clusters without dynamic storage provisioning)
+prometheus:
+  prometheus:
+    prometheusSpec:
+      storageSpec:
+        emptyDir:
+          sizeLimit: 10Gi
+  grafana:
+    persistence:
+      enabled: false
