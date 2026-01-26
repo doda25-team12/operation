@@ -79,3 +79,5 @@ PR Link: <https://github.com/doda25-team12/operation/pull/11>
 ## Week 10
 - Yuvraj Singh Pathania (6495044): Fixed critical issues preventing model-service from functioning correctly in Kubernetes deployment(resolve model-service preprocessor path) as well as tested everything end to end to make sure that the istio service mesh is active along with the prometheus setup
   - PR Link: <https://github.com/doda25-team12/operation/pull/34>
+- Atharva Dagaonkar (6406947): Added project documentation for A4. Added diagrams and refactored extension proposal documentation.
+  - PR Link: <https://github.com/doda25-team12/operation/pull/36>
