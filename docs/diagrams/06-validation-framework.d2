@@ -1,0 +1,172 @@
+# Configuration Validation Framework - Architecture
+# Render: d2 06-validation-framework.d2 06-validation-framework.svg
+
+title: "Configuration Validation Framework" {
+  near: top-center
+  shape: text
+  style.font-size: 24
+  style.bold: true
+}
+
+direction: down
+
+# Input Files
+inputs: "Configuration Sources" {
+  style.fill: "#fff3e0"
+
+  env: ".env" {
+    shape: page
+    style.fill: "#ffcc80"
+  }
+
+  values: "values.yaml" {
+    shape: page
+    style.fill: "#ffcc80"
+  }
+
+  templates: "templates/*.yaml" {
+    shape: package
+    style.fill: "#ffcc80"
+  }
+}
+
+# Validation Framework
+framework: "Validation Framework" {
+  style.fill: "#e8f5e9"
+  style.stroke: "#4caf50"
+  style.stroke-width: 2
+
+  # Scripts
+  scripts: "Validation Scripts" {
+    style.fill: "#c8e6c9"
+
+    main: "validate-config.sh\n(Orchestrator)" {
+      shape: rectangle
+      style.fill: "#4caf50"
+      style.font-color: white
+    }
+
+    schema: "validate-schema.py\n(JSON Schema)" {
+      shape: rectangle
+      style.fill: "#66bb6a"
+      style.font-color: white
+    }
+
+    pre-deploy: "pre-deployment-check.sh\n(Helm lint + dry-run)" {
+      shape: rectangle
+      style.fill: "#81c784"
+    }
+  }
+
+  # Layers
+  validation-layers: "6 Validation Layers" {
+    style.fill: "#a5d6a7"
+
+    l1: "1. JSON Schema" {
+      shape: rectangle
+      style.fill: "#2e7d32"
+      style.font-color: white
+    }
+    l2: "2. Port Consistency" {
+      shape: rectangle
+      style.fill: "#388e3c"
+      style.font-color: white
+    }
+    l3: "3. Image Tags" {
+      shape: rectangle
+      style.fill: "#43a047"
+      style.font-color: white
+    }
+    l4: "4. Version Labels" {
+      shape: rectangle
+      style.fill: "#4caf50"
+      style.font-color: white
+    }
+    l5: "5. ConfigMap" {
+      shape: rectangle
+      style.fill: "#66bb6a"
+      style.font-color: white
+    }
+    l6: "6. Env Variables" {
+      shape: rectangle
+      style.fill: "#81c784"
+    }
+
+    l1 -> l2 -> l3 -> l4 -> l5 -> l6
+  }
+
+  # Config
+  config: "Schema & Tests" {
+    style.fill: "#dcedc8"
+
+    schema-file: "values.schema.json" {
+      shape: page
+      style.fill: "#aed581"
+    }
+
+    tests: "tests/*.yaml" {
+      shape: package
+      style.fill: "#aed581"
+    }
+  }
+}
+
+# Output
+result: "Validation Result" {
+  shape: diamond
+  style.fill: "#ffeb3b"
+  width: 140
+  height: 80
+}
+
+# Outcomes
+pass: "Deploy" {
+  shape: rectangle
+  style.fill: "#4caf50"
+  style.font-color: white
+  width: 120
+}
+
+fail: "Fix & Retry" {
+  shape: rectangle
+  style.fill: "#f44336"
+  style.font-color: white
+  width: 120
+}
+
+# CI/CD
+cicd: "CI/CD Integration" {
+  style.fill: "#e3f2fd"
+  style.stroke-dash: 3
+
+  github: "GitHub Actions\nvalidate-config.yml" {
+    shape: hexagon
+    style.fill: "#2196f3"
+    style.font-color: white
+  }
+
+  pr-check: "PR Validation\n& Comments" {
+    shape: rectangle
+    style.fill: "#64b5f6"
+  }
+}
+
+# Connections
+inputs.env -> framework.scripts.main
+inputs.values -> framework.scripts.main
+inputs.values -> framework.scripts.schema
+inputs.templates -> framework.scripts.pre-deploy
+
+framework.scripts.main -> framework.validation-layers.l1
+framework.scripts.schema -> framework.validation-layers.l1
+framework.config.schema-file -> framework.scripts.schema
+
+framework.validation-layers.l6 -> result
+framework.scripts.pre-deploy -> result
+
+result -> pass: "all pass" {style.stroke: "#4caf50"; style.stroke-width: 2}
+result -> fail: "errors" {style.stroke: "#f44336"; style.stroke-width: 2}
+fail -> inputs: "fix config" {style.stroke-dash: 3}
+
+cicd.github -> framework.scripts.main: "trigger" {style.stroke-dash: 3}
+result -> cicd.pr-check: "report" {style.stroke-dash: 3}

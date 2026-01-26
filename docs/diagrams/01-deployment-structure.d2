@@ -1,0 +1,225 @@
+# SMS Spam Detection - Deployment Structure
+# Render: d2 01-deployment-structure.d2 01-deployment-structure.svg
+
+title: "SMS Spam Detection - Kubernetes Deployment Structure" {
+  near: top-center
+  shape: text
+  style.font-size: 24
+  style.bold: true
+}
+
+# External Access
+user: "User Browser" {
+  shape: person
+  style.fill: "#e3f2fd"
+}
+
+# Entry Points
+nginx-host: "sms.local\n192.168.56.95" {
+  shape: rectangle
+  style.fill: "#ff9800"
+  style.font-color: white
+}
+
+istio-host: "sms-istio.local\n192.168.56.96" {
+  shape: rectangle
+  style.fill: "#673ab7"
+  style.font-color: white
+}
+
+# Kubernetes Cluster
+cluster: "Kubernetes Cluster" {
+  style.fill: "#fafafa"
+  style.stroke: "#1976d2"
+  style.stroke-width: 2
+
+  # Ingress Controllers
+  ingress: "Ingress Layer" {
+    style.fill: "#fff3e0"
+
+    nginx: "Nginx Ingress\nController" {
+      shape: hexagon
+      style.fill: "#ff9800"
+    }
+
+    istio-gw: "Istio\nGateway" {
+      shape: hexagon
+      style.fill: "#673ab7"
+      style.font-color: white
+    }
+  }
+
+  # Namespace
+  ns: "Namespace: sms-spam-detection" {
+    style.fill: "#e8f5e9"
+    style.stroke: "#4caf50"
+    style.stroke-width: 2
+
+    # Services
+    services: "Services (ClusterIP)" {
+      style.fill: "#e1f5fe"
+
+      app-svc: "app-service\nPort: 8080" {
+        shape: cylinder
+        style.fill: "#03a9f4"
+        style.font-color: white
+      }
+
+      model-svc: "model-service\nPort: 8081" {
+        shape: cylinder
+        style.fill: "#00bcd4"
+        style.font-color: white
+      }
+    }
+
+    # Stable Deployments
+    stable: "Stable Deployments (v1)" {
+      style.fill: "#c8e6c9"
+
+      app-v1: "app-service\n2 replicas" {
+        shape: rectangle
+        style.fill: "#4caf50"
+        style.font-color: white
+      }
+
+      model-v1: "model-service\n2 replicas" {
+        shape: rectangle
+        style.fill: "#388e3c"
+        style.font-color: white
+      }
+    }
+
+    # Canary Deployments
+    canary: "Canary Deployments (v2)" {
+      style.fill: "#fff9c4"
+
+      app-v2: "app-service-canary\n1 replica" {
+        shape: rectangle
+        style.fill: "#ffc107"
+        style.stroke-dash: 3
+      }
+
+      model-v2: "model-service-canary\n1 replica" {
+        shape: rectangle
+        style.fill: "#ffb300"
+        style.stroke-dash: 3
+      }
+    }
+
+    # Shadow Tier
+    shadow-tier: "Shadow (v-shadow)" {
+      style.fill: "#f3e5f5"
+
+      model-shadow: "model-service-shadow\n1 replica" {
+        shape: rectangle
+        style.fill: "#9c27b0"
+        style.font-color: white
+        style.stroke-dash: 5
+      }
+    }
+
+    # Config
+    config: "Configuration" {
+      style.fill: "#fce4ec"
+
+      configmap: "ConfigMap\napp-config" {
+        shape: page
+        style.fill: "#e91e63"
+        style.font-color: white
+      }
+
+      secret: "Secret\nregistry-creds" {
+        shape: page
+        style.fill: "#c2185b"
+        style.font-color: white
+      }
+    }
+
+    # Storage
+    storage: "Storage" {
+      style.fill: "#efebe9"
+
+      pvc: "PVC\nmodel-files" {
+        shape: cylinder
+        style.fill: "#795548"
+        style.font-color: white
+      }
+    }
+  }
+
+  # Istio Resources
+  istio: "Istio Traffic Management" {
+    style.fill: "#ede7f6"
+
+    vs: "VirtualServices" {
+      shape: parallelogram
+      style.fill: "#7c4dff"
+      style.font-color: white
+    }
+
+    dr: "DestinationRules" {
+      shape: parallelogram
+      style.fill: "#536dfe"
+      style.font-color: white
+    }
+  }
+
+  # PV
+  pv: "PersistentVolume\n/mnt/shared/models" {
+    shape: cylinder
+    style.fill: "#607d8b"
+    style.font-color: white
+  }
+
+  # Monitoring
+  monitoring: "Monitoring (Optional)" {
+    style.fill: "#ffebee"
+    style.stroke-dash: 3
+
+    prometheus: "Prometheus" {
+      shape: hexagon
+      style.fill: "#e53935"
+      style.font-color: white
+    }
+
+    grafana: "Grafana" {
+      shape: hexagon
+      style.fill: "#fb8c00"
+    }
+  }
+}
+
+# Connections - External
+user -> nginx-host: "HTTP" {style.stroke: "#1976d2"}
+user -> istio-host: "HTTP" {style.stroke: "#673ab7"}
+nginx-host -> cluster.ingress.nginx
+istio-host -> cluster.ingress.istio-gw
+
+# Connections - Ingress to Services
+cluster.ingress.nginx -> cluster.ns.services.app-svc
+cluster.ingress.istio-gw -> cluster.istio.vs
+cluster.istio.vs -> cluster.ns.services.app-svc
+cluster.istio.dr -> cluster.ns.services.app-svc
+
+# Connections - Services to Deployments
+cluster.ns.services.app-svc -> cluster.ns.stable.app-v1: "90%" {style.stroke: "#4caf50"}
+cluster.ns.services.app-svc -> cluster.ns.canary.app-v2: "10%" {style.stroke: "#ffc107"}
+
+cluster.ns.services.model-svc -> cluster.ns.stable.model-v1
+cluster.ns.services.model-svc -> cluster.ns.canary.model-v2
+cluster.ns.stable.model-v1 -> cluster.ns.shadow-tier.model-shadow: "mirror" {style.stroke-dash: 5; style.stroke: "#9c27b0"}
+
+# Connections - Inter-service
+cluster.ns.stable.app-v1 -> cluster.ns.services.model-svc: "HTTP" {style.stroke: "#00bcd4"}
+
+# Connections - Config
+cluster.ns.config.configmap -> cluster.ns.stable.app-v1: "envFrom" {style.stroke: "#e91e63"; style.stroke-dash: 2}
+cluster.ns.config.configmap -> cluster.ns.stable.model-v1: "envFrom" {style.stroke: "#e91e63"; style.stroke-dash: 2}
+
+# Connections - Storage
+cluster.ns.storage.pvc -> cluster.pv
+cluster.ns.stable.model-v1 -> cluster.ns.storage.pvc: "mount" {style.stroke: "#795548"; style.stroke-dash: 2}
+
+# Connections - Monitoring
+cluster.monitoring.prometheus -> cluster.ns.services.app-svc: "scrape" {style.stroke-dash: 3; style.stroke: "#e53935"}
+cluster.monitoring.prometheus -> cluster.ns.services.model-svc: "scrape" {style.stroke-dash: 3; style.stroke: "#e53935"}

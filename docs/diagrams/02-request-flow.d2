@@ -1,0 +1,153 @@
+# SMS Spam Detection - Request Flow
+# Render: d2 02-request-flow.d2 02-request-flow.svg
+
+direction: down
+
+title: "Request Flow - SMS Classification" {
+  near: top-center
+  shape: text
+  style.font-size: 24
+  style.bold: true
+}
+
+# Step 1: User Request
+step1: "1. User Request" {
+  style.fill: "#e3f2fd"
+  style.stroke: "#1976d2"
+  style.stroke-width: 2
+
+  content: |md
+    **POST http://sms.local/predict**
+
+    Headers:
+    - Content-Type: application/json
+    - Host: sms.local
+
+    Body:
+    ```json
+    {"sms": "You won a free iPhone!"}
+    ```
+  | {
+    style.font-size: 14
+  }
+}
+
+# Step 2: Ingress
+step2: "2. Nginx Ingress" {
+  shape: hexagon
+  style.fill: "#ff9800"
+  style.font-color: white
+
+  width: 200
+}
+
+step2-note: "Rate limit: 10 req/min\nBurst: 5 requests\nRoute: / -> app-service:8080" {
+  shape: text
+  style.font-size: 12
+  style.font-color: "#666"
+}
+
+# Step 3: App Service
+step3: "3. App Service (Spring Boot)" {
+  shape: rectangle
+  style.fill: "#4caf50"
+  style.font-color: white
+
+  width: 250
+}
+
+step3-note: "Receives HTTP POST\nExtracts SMS text\nForwards to model-service" {
+  shape: text
+  style.font-size: 12
+  style.font-color: "#666"
+}
+
+# Step 4: Internal Call
+step4: "4. Internal Service Call" {
+  style.fill: "#e1f5fe"
+  style.stroke: "#03a9f4"
+
+  content: |md
+    **POST http://model-service:8081/predict**
+
+    Via Kubernetes Service DNS
+    With Istio: mTLS encrypted
+  | {
+    style.font-size: 14
+  }
+}
+
+# Step 5: Model Service
+step5: "5. Model Service (Flask)" {
+  shape: rectangle
+  style.fill: "#00bcd4"
+  style.font-color: white
+
+  width: 250
+}
+
+step5-note: "Load ML model (Decision Tree)\nPreprocess text\nRun classification\nReturn prediction" {
+  shape: text
+  style.font-size: 12
+  style.font-color: "#666"
+}
+
+# Step 6: Response
+step6: "6. Response" {
+  style.fill: "#c8e6c9"
+  style.stroke: "#4caf50"
+  style.stroke-width: 2
+
+  content: |md
+    ```json
+    {
+      "classifier": "decision tree",
+      "result": "spam",
+      "sms": "You won a free iPhone!"
+    }
+    ```
+  | {
+    style.font-size: 14
+  }
+}
+
+# Final: Display
+display: "Display Result to User" {
+  shape: rectangle
+  style.fill: "#81c784"
+  style.font-color: white
+}
+
+# Main Flow
+step1 -> step2: "HTTP Request" {
+  style.stroke: "#1976d2"
+  style.stroke-width: 2
+}
+step2 -> step2-note: "" {style.stroke-dash: 5; style.stroke: "#999"}
+step2 -> step3: "Route to backend" {
+  style.stroke: "#ff9800"
+  style.stroke-width: 2
+}
+step3 -> step3-note: "" {style.stroke-dash: 5; style.stroke: "#999"}
+step3 -> step4: "Forward request" {
+  style.stroke: "#4caf50"
+  style.stroke-width: 2
+}
+step4 -> step5: "Cluster DNS" {
+  style.stroke: "#03a9f4"
+  style.stroke-width: 2
+}
+step5 -> step5-note: "" {style.stroke-dash: 5; style.stroke: "#999"}
+step5 -> step6: "Classification result" {
+  style.stroke: "#00bcd4"
+  style.stroke-width: 2
+}
+step6 -> display: "Return to app" {
+  style.stroke: "#4caf50"
+  style.stroke-width: 2
+}
+display -> step1: "HTTP Response" {
+  style.stroke: "#81c784"
+  style.stroke-width: 2
+  style.stroke-dash: 3
+}

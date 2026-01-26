@@ -1,0 +1,153 @@
+# SMS Spam Detection - Traffic Routing (90/10 Canary Split)
+# Render: d2 03-traffic-routing.d2 03-traffic-routing.svg
+
+title: "Traffic Routing - Canary Deployment (90/10 Split)" {
+  near: top-center
+  shape: text
+  style.font-size: 24
+  style.bold: true
+}
+
+direction: down
+
+# Incoming Traffic
+traffic: "Incoming Traffic" {
+  shape: person
+  style.fill: "#e3f2fd"
+}
+
+# Gateway
+gateway: "Istio Gateway\nsms-istio.local:80" {
+  shape: hexagon
+  style.fill: "#673ab7"
+  style.font-color: white
+  width: 200
+}
+
+# VirtualService Box
+virtualservice: "VirtualService: sms-virtualservice" {
+  style.fill: "#ede7f6"
+  style.stroke: "#673ab7"
+  style.stroke-width: 2
+
+  rules: "Routing Rules (evaluated in order)" {
+    style.fill: "#d1c4e9"
+
+    rule1: "1. Cookie: experiment=canary\n   -> Route 100% to v2" {
+      style.fill: "#b39ddb"
+    }
+
+    rule2: "2. Cookie: experiment=stable\n   -> Route 100% to v1" {
+      style.fill: "#b39ddb"
+    }
+
+    rule3: "3. Default: Weighted Split\n   -> v1: 90% (stable)\n   -> v2: 10% (canary)" {
+      style.fill: "#9575cd"
+      style.font-color: white
+    }
+  }
+
+  config: "Configuration Location" {
+    style.fill: "#f5f5f5"
+
+    location: |md
+      **values.yaml** (lines 144-151)
+      ```yaml
+      istio:
+        traffic:
+          app:
+            stableWeight: 90
+            canaryWeight: 10
+      ```
+    |
+  }
+}
+
+# Traffic Split Decision
+split: "Traffic Split" {
+  shape: diamond
+  style.fill: "#ffeb3b"
+  width: 120
+  height: 80
+}
+
+# Stable Path
+stable-box: "Stable (v1)" {
+  style.fill: "#c8e6c9"
+  style.stroke: "#4caf50"
+  style.stroke-width: 2
+
+  weight: "90%" {
+    shape: text
+    style.font-size: 32
+    style.bold: true
+    style.font-color: "#2e7d32"
+  }
+
+  pods: "app-service\nversion: v1\n2 replicas" {
+    shape: rectangle
+    style.fill: "#4caf50"
+    style.font-color: white
+  }
+}
+
+# Canary Path
+canary-box: "Canary (v2)" {
+  style.fill: "#fff9c4"
+  style.stroke: "#ffc107"
+  style.stroke-width: 2
+
+  weight: "10%" {
+    shape: text
+    style.font-size: 32
+    style.bold: true
+    style.font-color: "#f57f17"
+  }
+
+  pods: "app-service-canary\nversion: v2\n1 replica" {
+    shape: rectangle
+    style.fill: "#ffc107"
+  }
+}
+
+# DestinationRule
+destinationrule: "DestinationRule: app-service-dr" {
+  style.fill: "#e8eaf6"
+  style.stroke: "#3f51b5"
+  style.stroke-width: 2
+
+  subsets: |md
+    **Subsets Defined:**
+
+    - **v1** (stable)
+      labels: {app: app-service, version: v1}
+
+    - **v2** (canary)
+      labels: {app: app-service, version: v2}
+
+    **Sticky Sessions:**
+    Consistent hash on cookie: `experiment`
+  |
+}
+
+# Connections
+traffic -> gateway: "HTTP" {style.stroke: "#673ab7"; style.stroke-width: 2}
+gateway -> virtualservice: "apply rules" {style.stroke: "#673ab7"; style.stroke-width: 2}
+virtualservice -> split: "route" {style.stroke: "#7c4dff"; style.stroke-width: 2}
+
+split -> stable-box: "90%" {
+  style.stroke: "#4caf50"
+  style.stroke-width: 3
+  style.font-size: 16
+  style.bold: true
+}
+
+split -> canary-box: "10%" {
+  style.stroke: "#ffc107"
+  style.stroke-width: 3
+  style.font-size: 16
+  style.bold: true
+}
+
+destinationrule -> stable-box.pods: "subset v1" {style.stroke: "#3f51b5"; style.stroke-dash: 3}
+destinationrule -> canary-box.pods: "subset v2" {style.stroke: "#3f51b5"; style.stroke-dash: 3}
