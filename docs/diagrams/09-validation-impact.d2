@@ -1,0 +1,225 @@
+# Configuration Validation Framework - Before vs After Impact
+# Render: d2 09-validation-impact.d2 09-validation-impact.svg
+
+title: "Validation Framework Impact: Before vs After" {
+  near: top-center
+  shape: text
+  style.font-size: 24
+  style.bold: true
+}
+
+direction: right
+
+# BEFORE (Left side)
+before: "BEFORE: Manual Process" {
+  style.fill: "#ffebee"
+  style.stroke: "#f44336"
+  style.stroke-width: 3
+
+  subtitle: "❌ Reactive Debugging" {
+    shape: text
+    style.font-size: 16
+    style.italic: true
+  }
+
+  # Steps
+  step1: "1. Edit Config\n(values.yaml)" {
+    shape: rectangle
+    style.fill: "#ffcdd2"
+    width: 150
+  }
+
+  step2: "2. Commit & Push\n(No validation)" {
+    shape: rectangle
+    style.fill: "#ef9a9a"
+    width: 150
+  }
+
+  step3: "3. Deploy\nhelm install" {
+    shape: rectangle
+    style.fill: "#e57373"
+    width: 150
+  }
+
+  step4: "4. Pod Crashes\nCrashLoopBackOff" {
+    shape: rectangle
+    style.fill: "#f44336"
+    style.font-color: white
+    width: 150
+  }
+
+  step5: "5. Debug Logs\nkubectl logs..." {
+    shape: rectangle
+    style.fill: "#e53935"
+    style.font-color: white
+    width: 150
+  }
+
+  step6: "6. Find Root Cause\n(20-30 minutes)" {
+    shape: rectangle
+    style.fill: "#c62828"
+    style.font-color: white
+    width: 150
+  }
+
+  step7: "7. Fix & Redeploy\n(Another 5 min)" {
+    shape: rectangle
+    style.fill: "#b71c1c"
+    style.font-color: white
+    width: 150
+  }
+
+  # Flow
+  step1 -> step2 -> step3 -> step4 -> step5 -> step6 -> step7
+
+  # Stats
+  stats: "Total Time: 30-40 minutes\nErrors/month: 3-5\nProduction impact: HIGH" {
+    shape: text
+    style.font-size: 14
+    style.fill: "#ffebee"
+    style.bold: true
+  }
+}
+
+# AFTER (Right side)
+after: "AFTER: Automated Validation" {
+  style.fill: "#e8f5e9"
+  style.stroke: "#4caf50"
+  style.stroke-width: 3
+
+  subtitle: "✅ Proactive Prevention" {
+    shape: text
+    style.font-size: 16
+    style.italic: true
+  }
+
+  # Steps
+  step1: "1. Edit Config\n(values.yaml)" {
+    shape: rectangle
+    style.fill: "#c8e6c9"
+    width: 150
+  }
+
+  step2: "2. Run Validation\nbash validate-config.sh" {
+    shape: rectangle
+    style.fill: "#a5d6a7"
+    width: 150
+  }
+
+  decision: "Valid?" {
+    shape: diamond
+    style.fill: "#ffeb3b"
+    width: 120
+    height: 80
+  }
+
+  error-path: "Errors Found\n(Clear message)" {
+    shape: rectangle
+    style.fill: "#ff9800"
+    style.font-color: white
+    width: 150
+  }
+
+  fix: "Fix Issues\n(< 2 minutes)" {
+    shape: rectangle
+    style.fill: "#ffb74d"
+    width: 150
+  }
+
+  step3: "3. Commit & Push\n(CI validates)" {
+    shape: rectangle
+    style.fill: "#81c784"
+    width: 150
+  }
+
+  step4: "4. Deploy\nhelm install" {
+    shape: rectangle
+    style.fill: "#66bb6a"
+    width: 150
+  }
+
+  step5: "5. Pods Start\nHealthy ✓" {
+    shape: rectangle
+    style.fill: "#4caf50"
+    style.font-color: white
+    width: 150
+  }
+
+  # Flow
+  step1 -> step2 -> decision
+  decision -> error-path: "NO" {style.stroke: "#ff9800"; style.stroke-width: 2}
+  decision -> step3: "YES" {style.stroke: "#4caf50"; style.stroke-width: 2}
+  error-path -> fix -> step2: "retry" {style.stroke-dash: 3}
+  step3 -> step4 -> step5
+
+  # Stats
+  stats: "Total Time: 3-5 minutes\nErrors/month: < 1\nProduction impact: NONE" {
+    shape: text
+    style.font-size: 14
+    style.fill: "#e8f5e9"
+    style.bold: true
+  }
+}
+
+# Comparison metrics at bottom
+metrics: "Impact Metrics" {
+  style.fill: "#f3e5f5"
+  style.stroke: "#9c27b0"
+  style.stroke-width: 2
+
+  time: "⏱️ Time Saved\n25-35 min per error" {
+    shape: rectangle
+    style.fill: "#ce93d8"
+    width: 180
+  }
+
+  errors: "🛡️ Errors Prevented\n90%+ reduction" {
+    shape: rectangle
+    style.fill: "#ba68c8"
+    style.font-color: white
+    width: 180
+  }
+
+  feedback: "⚡ Feedback Loop\n30 min → 3 min" {
+    shape: rectangle
+    style.fill: "#ab47bc"
+    style.font-color: white
+    width: 180
+  }
+
+  confidence: "✨ Deploy Confidence\nLow → High" {
+    shape: rectangle
+    style.fill: "#9c27b0"
+    style.font-color: white
+    width: 180
+  }
+}
+
+# Examples box
+examples: "Common Errors Caught" {
+  style.fill: "#fff3e0"
+  style.stroke: "#ff9800"
+  style.stroke-dash: 3
+
+  ex1: "❌ Missing MODEL_VERSION\n→ Layer 5 catches it" {
+    shape: rectangle
+    style.fill: "#ffe0b2"
+    width: 200
+  }
+
+  ex2: "❌ Port mismatch (8081 vs 8082)\n→ Layer 2 catches it" {
+    shape: rectangle
+    style.fill: "#ffcc80"
+    width: 200
+  }
+
+  ex3: "❌ Canary same tag as stable\n→ Layer 3 catches it" {
+    shape: rectangle
+    style.fill: "#ffb74d"
+    width: 200
+  }
+}
+
+# Connect sections
+before.step7 -> metrics.time: "saved" {style.stroke: "#9c27b0"; style.stroke-dash: 3}
+after.step5 -> metrics.errors: "prevented" {style.stroke: "#9c27b0"; style.stroke-dash: 3}

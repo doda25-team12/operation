@@ -189,6 +189,18 @@ data:
 
 Verifies all `.env` variables are referenced in `docker-compose.yml`.
 
+### Before vs After Impact
+
+![Validation Impact](./diagrams/09-validation-impact.png)
+
+*Diagram: Comparison of manual vs automated validation workflows and their impact on delivery speed.*
+
+### Detailed Examples
+
+![Layer Details](./diagrams/10-validation-layer-details.png)
+
+*Diagram: Detailed examples of common configuration errors caught by each validation layer.*
+
 ---
 
 ## Usage
@@ -374,6 +386,8 @@ All diagrams are provided in D2 format and can be rendered to SVG.
 | Validation Framework | [`diagrams/06-validation-framework.d2`](./diagrams/06-validation-framework.d2) | Framework architecture |
 | Validation Layers | [`diagrams/07-validation-layers.d2`](./diagrams/07-validation-layers.d2) | 6-layer pipeline |
 | Validation Workflow | [`diagrams/08-validation-workflow.d2`](./diagrams/08-validation-workflow.d2) | Deployment workflow |
+| **Before vs After Impact** | [`diagrams/09-validation-impact.d2`](./diagrams/09-validation-impact.d2) | Comparison of manual vs automated validation |
+| **Layer Details & Examples** | [`diagrams/10-validation-layer-details.d2`](./diagrams/10-validation-layer-details.d2) | Detailed examples of what each layer catches |
 
 ### Rendering Diagrams
 
@@ -386,6 +400,8 @@ cd operation/docs/diagrams
 d2 06-validation-framework.d2 06-validation-framework.svg
 d2 07-validation-layers.d2 07-validation-layers.svg
 d2 08-validation-workflow.d2 08-validation-workflow.svg
+d2 09-validation-impact.d2 09-validation-impact.png
+d2 10-validation-layer-details.d2 10-validation-layer-details.png
 ```
 
 ---

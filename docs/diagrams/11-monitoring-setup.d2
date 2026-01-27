@@ -1,0 +1,197 @@
+# SMS Spam Detection - Monitoring Architecture
+# Render: d2 11-monitoring-setup.d2 11-monitoring-setup.svg
+
+title: "Monitoring & Observability Architecture" {
+  near: top-center
+  shape: text
+  style.font-size: 24
+  style.bold: true
+}
+
+direction: down
+
+# External Access
+external: "External Access" {
+  style.fill: "#e3f2fd"
+  
+  admin: "Admin / SRE" {
+    shape: person
+  }
+
+  ingress-hosts: "Ingress Hosts" {
+    grafana-host: "grafana.local" {
+      shape: rectangle
+      style.fill: "#ff9800"
+      style.font-color: white
+    }
+    prom-host: "prometheus.local" {
+      shape: rectangle
+      style.fill: "#e53935"
+      style.font-color: white
+    }
+    alert-host: "alertmanager.local" {
+      shape: rectangle
+      style.fill: "#d32f2f"
+      style.font-color: white
+    }
+  }
+}
+
+# Cluster
+cluster: "Kubernetes Cluster" {
+  style.fill: "#fafafa"
+  style.stroke: "#1976d2"
+  style.stroke-width: 2
+
+  # Ingress Controller
+  ingress: "Nginx Ingress Controller" {
+    shape: hexagon
+    style.fill: "#ff9800"
+  }
+
+  # Monitoring Stack
+  monitoring: "Prometheus Operator Stack" {
+    style.fill: "#ffebee"
+    style.stroke: "#d32f2f"
+
+    prometheus: "Prometheus Server\nTSDB (emptyDir)\nRetention: 10d" {
+      shape: hexagon
+      style.fill: "#e53935"
+      style.font-color: white
+    }
+
+    grafana: "Grafana\nVisualizations\nDashboards" {
+      shape: hexagon
+      style.fill: "#fb8c00"
+    }
+
+    alertmanager: "AlertManager\nNotifications\n(Email/SMTP)" {
+      shape: hexagon
+      style.fill: "#d32f2f"
+      style.font-color: white
+    }
+  }
+
+  # Configuration CRDs
+  configs: "Monitoring Configuration (CRDs)" {
+    style.fill: "#e0f2f1"
+    
+    sm: "ServiceMonitors" {
+      shape: page
+      style.fill: "#00897b"
+      style.font-color: white
+      
+      content: |md
+        - **app-service**
+          - /metrics
+          - 15s interval
+        - **model-service**
+          - /metrics
+          - 15s interval
+      |
+    }
+
+    rules: "PrometheusRules" {
+      shape: page
+      style.fill: "#00695c"
+      style.font-color: white
+      
+      content: |md
+        - **High Traffic**
+          - http_requests > 15/m
+          - duration: 2m
+      |
+    }
+  }
+
+  # Application Targets
+  apps: "Application Namespace" {
+    style.fill: "#e8f5e9"
+    style.stroke: "#4caf50"
+
+    app-svc: "app-service" {
+      shape: cylinder
+      style.fill: "#4caf50"
+      style.font-color: white
+    }
+
+    model-svc: "model-service" {
+      shape: cylinder
+      style.fill: "#00897b"
+      style.font-color: white
+    }
+  }
+
+  # Infrastructure Targets
+  infra: "Infrastructure" {
+    style.fill: "#f5f5f5"
+    
+    node-exp: "Node Exporter" {
+      shape: rectangle
+      style.fill: "#607d8b"
+      style.font-color: white
+    }
+    
+    kube-state: "Kube State Metrics" {
+      shape: rectangle
+      style.fill: "#78909c"
+      style.font-color: white
+    }
+  }
+}
+
+# Connections - Access
+external.admin -> external.ingress-hosts.grafana-host: "HTTPS"
+external.admin -> external.ingress-hosts.prom-host: "HTTPS"
+external.admin -> external.ingress-hosts.alert-host: "HTTPS"
+
+external.ingress-hosts.grafana-host -> cluster.ingress
+external.ingress-hosts.prom-host -> cluster.ingress
+external.ingress-hosts.alert-host -> cluster.ingress
+
+cluster.ingress -> cluster.monitoring.grafana: "Route /"
+cluster.ingress -> cluster.monitoring.prometheus: "Route /"
+cluster.ingress -> cluster.monitoring.alertmanager: "Route /"
+
+# Connections - Data Flow
+cluster.monitoring.grafana -> cluster.monitoring.prometheus: "Query (PromQL)" {
+  style.stroke: "#fb8c00"
+  style.stroke-width: 2
+}
+
+cluster.monitoring.prometheus -> cluster.monitoring.alertmanager: "Fire Alerts" {
+  style.stroke: "#d32f2f"
+  style.stroke-width: 2
+}
+
+# Connections - Configuration
+cluster.configs.sm -> cluster.monitoring.prometheus: "Configures Scraping" {
+  style.stroke-dash: 3
+  style.stroke: "#00897b"
+}
+
+cluster.configs.rules -> cluster.monitoring.prometheus: "Configures Alerting" {
+  style.stroke-dash: 3
+  style.stroke: "#00695c"
+}
+
+# Connections - Scraping
+cluster.monitoring.prometheus -> cluster.apps.app-svc: "Scrape /metrics" {
+  style.stroke: "#e53935"
+  style.stroke-width: 2
+}
+
+cluster.monitoring.prometheus -> cluster.apps.model-svc: "Scrape /metrics" {
+  style.stroke: "#e53935"
+  style.stroke-width: 2
+}
+
+cluster.monitoring.prometheus -> cluster.infra.node-exp: "Scrape" {
+  style.stroke: "#e53935"
+  style.stroke-width: 1
+}
+
+cluster.monitoring.prometheus -> cluster.infra.kube-state: "Scrape" {
+  style.stroke: "#e53935"
+  style.stroke-width: 1
+}

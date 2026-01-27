@@ -5,6 +5,8 @@
 192.168.56.100  ctrl
 192.168.56.101  node-1
 192.168.56.102  node-2
+192.168.56.95   sms.local
+192.168.56.96 sms-istio.local
 
 # The following lines are desirable for IPv6 capable hosts
 ::1     localhost ip6-localhost ip6-loopback

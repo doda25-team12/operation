@@ -162,7 +162,23 @@
         owner: root
         group: root
         mode: '0644'
-      notify: Restart systemd-resolved
+      register: dns_config_result
+      tags:
+        - dns
+
+    - name: Restart systemd-resolved immediately if config changed
+      service:
+        name: systemd-resolved
+        state: restarted
+      when: dns_config_result.changed
+      tags:
+        - dns
+
+    - name: Wait for systemd-resolved to be ready
+      wait_for:
+        path: /run/systemd/resolve/stub-resolv.conf
+        state: present
+        timeout: 30
       tags:
         - dns
 
@@ -172,6 +188,16 @@
         dest: /etc/resolv.conf
         state: link
         force: yes
+      tags:
+        - dns
+
+    - name: Verify DNS resolution is working
+      command: getent hosts google.com
+      register: dns_test
+      retries: 5
+      delay: 3
+      until: dns_test.rc == 0
+      changed_when: false
       tags:
         - dns
 
@@ -189,6 +215,8 @@
           - software-properties-common
         state: present
         update_cache: yes
+      environment:
+        DEBIAN_FRONTEND: noninteractive
       tags:
         - packages
 
@@ -345,9 +373,4 @@
     - name: Restart containerd
       service:
         name: containerd
-        state: restarted
-
-    - name: Restart systemd-resolved
-      service:
-        name: systemd-resolved
         state: restarted
