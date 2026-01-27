@@ -789,7 +789,7 @@ helm repo add prometheus-community https://prometheus-community.github.io/helm-c
 helm repo update
 
 # 5. Build Helm dependencies
-cd ~/helm-chart
+cd ~/helm-chart/sms-spam-detector
 helm dependency build
 
 # 6. Lint the chart to validate

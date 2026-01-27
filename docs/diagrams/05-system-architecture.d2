@@ -8,15 +8,19 @@ title: "Complete System Architecture" {
   style.bold: true
 }
 
+direction: right
+
 # External Zone
 external: "External Zone" {
   style.fill: "#e3f2fd"
+  direction: right
 
   users: "Users" {
     shape: person
   }
 
   entry: "Entry Points" {
+    direction: down
     nginx: "sms.local\n192.168.56.95" {
       shape: rectangle
       style.fill: "#ff9800"
@@ -36,10 +40,12 @@ k8s: "Kubernetes Cluster" {
   style.fill: "#fafafa"
   style.stroke: "#1976d2"
   style.stroke-width: 3
+  direction: right
 
   # Ingress Layer
   ingress: "Ingress Layer" {
     style.fill: "#fff3e0"
+    direction: down
 
     nginx: "Nginx\nIngress" {
       shape: hexagon
@@ -57,10 +63,12 @@ k8s: "Kubernetes Cluster" {
   app-ns: "sms-spam-detection namespace" {
     style.fill: "#e8f5e9"
     style.stroke: "#4caf50"
+    direction: right
 
     # Frontend Tier
     frontend: "Frontend Tier" {
       style.fill: "#c8e6c9"
+      direction: down
 
       svc: "Service\napp-service:8080" {
         shape: cylinder
@@ -84,6 +92,7 @@ k8s: "Kubernetes Cluster" {
     # Backend Tier
     backend: "Backend Tier (ML)" {
       style.fill: "#e0f7fa"
+      direction: down
 
       svc: "Service\nmodel-service:8081" {
         shape: cylinder
@@ -114,6 +123,7 @@ k8s: "Kubernetes Cluster" {
     # Config
     config: "Configuration" {
       style.fill: "#fce4ec"
+      direction: down
 
       cm: "ConfigMap" {
         shape: page
@@ -138,6 +148,7 @@ k8s: "Kubernetes Cluster" {
   # Istio System
   istio-sys: "Istio Traffic Rules" {
     style.fill: "#ede7f6"
+    direction: right
 
     vs: "VirtualServices" {
       shape: parallelogram
@@ -156,6 +167,7 @@ k8s: "Kubernetes Cluster" {
   monitoring: "Monitoring (Optional)" {
     style.fill: "#ffebee"
     style.stroke-dash: 3
+    direction: right
 
     prom: "Prometheus" {
       shape: hexagon
