@@ -12,8 +12,10 @@ services:
 
     # Inject the model file from host to container
     # We map the local './models' folder to '/models' inside the container
+    # Also mount to /app/output for backward compatibility with text_preprocessing.py
     volumes:
       - ./models:/models
+      - ./models:/app/output
 
     # Fix architecture mismatch by reinstalling packages with compiled extensions for current platform
     command: sh -c "pip install --force-reinstall --no-cache-dir rpds-py regex numpy scipy scikit-learn pandas && python src/serve_model.py"
