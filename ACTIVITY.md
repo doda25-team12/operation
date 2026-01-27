@@ -85,3 +85,4 @@ PR Link: <https://github.com/doda25-team12/operation/pull/11>
 - Atharva Dagaonkar (6406947): Added project documentation for A4. Added diagrams and refactored extension proposal documentation.
   - PR Link: <https://github.com/doda25-team12/operation/pull/36>
 - Stilyan Penchev (5749131): Implemented resource quota for namespace. PR: <https://github.com/doda25-team12/operation/pull/37>
+- Andrei Paduraru (5774489): Improve documentation. PR: <https://github.com/doda25-team12/operation/pull/39>
