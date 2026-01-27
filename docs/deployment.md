@@ -76,6 +76,12 @@ All resources are deployed in the `sms-spam-detection` namespace with optional I
 | **PrometheusRule** | `sms-prometheusrules` | Alert rules (e.g., high request rate) |
 | **AlertmanagerConfig** | `sms-alertmanager-config` | Email notification routing |
 
+### Monitoring Architecture
+
+![Monitoring Setup](./diagrams/11-monitoring-setup.svg)
+
+*Diagram: Prometheus Operator stack including scraping targets, CRDs, and external access*
+
 ### Deployment Structure Diagram
 
 ![Deployment Structure](./diagrams/01-deployment-structure.svg)
@@ -320,6 +326,7 @@ All diagrams are provided in D2 format and can be rendered to SVG.
 | Traffic Routing | [`diagrams/03-traffic-routing.d2`](./diagrams/03-traffic-routing.d2) | 90/10 canary split configuration |
 | Model Traffic | [`diagrams/04-model-traffic-shadow.d2`](./diagrams/04-model-traffic-shadow.d2) | Shadow deployment and mirroring |
 | System Architecture | [`diagrams/05-system-architecture.d2`](./diagrams/05-system-architecture.d2) | Complete end-to-end view |
+| Monitoring Architecture | [`diagrams/11-monitoring-setup.d2`](./diagrams/11-monitoring-setup.d2) | Observability stack and data flow |
 
 ### Rendering Diagrams
 
@@ -337,6 +344,7 @@ d2 02-request-flow.d2 02-request-flow.svg
 d2 03-traffic-routing.d2 03-traffic-routing.svg
 d2 04-model-traffic-shadow.d2 04-model-traffic-shadow.svg
 d2 05-system-architecture.d2 05-system-architecture.svg
+d2 11-monitoring-setup.d2 11-monitoring-setup.svg
 ```
 
 ---
