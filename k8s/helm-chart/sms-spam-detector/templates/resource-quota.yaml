@@ -1,0 +1,15 @@
+{{- if .Values.quota.enabled }}
+apiVersion: v1
+kind: ResourceQuota
+metadata:
+  name: {{ include "sms-spam-detector.fullname" . }}-quota
+  namespace: {{ .Values.namespace }}
+  labels:
+    {{- include "sms-spam-detector.labels" . | nindent 4 }}
+spec:
+  hard:
+    requests.cpu: {{ .Values.quota.requests.cpu | quote }}
+    requests.memory: {{ .Values.quota.requests.memory | quote }}
+    limits.cpu: {{ .Values.quota.limits.cpu | quote }}
+    limits.memory: {{ .Values.quota.limits.memory | quote }}
+{{- end }}
