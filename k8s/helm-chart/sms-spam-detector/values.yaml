@@ -72,6 +72,20 @@ modelService:
     path: /apidocs
     initialDelaySeconds: 10
     periodSeconds: 5
+  readinessProbe:
+    enabled: true
+    path: /apidocs
+    initialDelaySeconds: 10
+    periodSeconds: 5
+
+  # Autoscaling configuration
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
 
 # App Service configuration
 appService:
@@ -110,6 +124,20 @@ appService:
     path: /sms
     initialDelaySeconds: 30
     periodSeconds: 5
+  readinessProbe:
+    enabled: true
+    path: /sms
+    initialDelaySeconds: 30
+    periodSeconds: 5
+
+  # Autoscaling configuration
+  autoscaling:
+    enabled: false
+    minReplicas: 2
+    maxReplicas: 5
+    targetCPUUtilizationPercentage: 70
+    targetMemoryUtilizationPercentage: 80
+
 
 # Persistent storage for ML models
 persistence:
