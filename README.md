@@ -3,34 +3,6 @@
 
 This repository contains the orchestration configuration for running the SMS Checker application using Docker Compose. The SMS Checker is a distributed system for detecting spam in SMS messages, demonstrating a microservice architecture with a Java/Spring Boot frontend and a Python/Flask backend.
 
-## 🔍 Configuration Validation Framework
-
-This repository includes an automated **Configuration Validation Framework** that prevents 90%+ of configuration-related deployment failures by validating at 6 layers before deployment.
-
-**Quick start:**
-```bash
-# Install dependencies
-bash k8s/validation/install-dependencies.sh
-
-# Run validation
-bash k8s/validation/validate-config.sh
-
-# Pre-deployment check (validation + helm lint + kubectl dry-run)
-bash k8s/validation/pre-deployment-check.sh
-
-# Deploy
-helm install sms-detector k8s/helm-chart/sms-spam-detector -n sms-spam-detection --create-namespace
-```
-
-**What it catches:**
-- ✓ Port mismatches between `.env` and `values.yaml`
-- ✓ Canary/shadow image tag conflicts
-- ✓ Missing MODEL_VERSION_ENV environment variable
-- ✓ URL construction errors
-- ✓ Invalid Helm chart syntax
-
-**Complete guide**: [k8s/validation/EXTENSION_PROPOSAL.md](k8s/validation/EXTENSION_PROPOSAL.md) - Full documentation including usage, verification steps, troubleshooting, and CI/CD integration
-
 ## System Architecture
 
 The application consists of two microservices:
@@ -113,6 +85,32 @@ The model-service expects the following files:
 - `model-{MODEL_VERSION_ENV}.joblib` - Trained decision tree classifier (version must match `MODEL_VERSION_ENV` in `.env`)
 - `preprocessor.joblib` - Text preprocessing pipeline
 
+### Downloading from GitHub Releases (Recommended)
+
+Download pre-trained model files directly from GitHub Releases:
+
+```bash
+cd operation/models
+
+# Check available versions
+gh release list -R doda25-team12/model-service
+
+# Download model file (replace 1.0.2 with desired version)
+curl -L -o model-1.0.2.joblib \
+  https://github.com/doda25-team12/model-service/releases/download/v1.0.2/model-1.0.2.joblib
+
+# Download preprocessor
+curl -L -o preprocessor.joblib \
+  https://github.com/doda25-team12/model-service/releases/download/v1.0.2/preprocessor.joblib
+```
+
+Then update `.env` to match the downloaded version:
+```bash
+MODEL_VERSION_ENV=1.0.2
+```
+
+Browse all releases at: https://github.com/doda25-team12/model-service/releases
+
 ### Training Models Locally
 
 If you want to train models from scratch:
@@ -179,6 +177,8 @@ HOST_PORT=9090
 ```
 
 ## How to Run
+
+> **Important**: Both services (app-service and model-service) must be running for the application to work. The frontend delegates SMS classification to the model-service backend. If model-service is not running or misconfigured, you will get a **500 Internal Server Error** when submitting SMS messages.
 
 1.  **Navigate to the operation directory**:
 
@@ -302,15 +302,57 @@ Ensure either:
 2.  Check logs: `docker compose logs app-service`
 3.  Ensure you're using the correct port from `.env`
 
-### Model predictions fail
+### Model predictions fail (500 Internal Server Error)
 
-**Problem**: Frontend shows error when submitting SMS
+**Problem**: Frontend returns 500 error when submitting SMS:
+```json
+{
+    "timestamp": "...",
+    "status": 500,
+    "error": "Internal Server Error",
+    "path": "/sms/"
+}
+```
+
+**Cause**: The app-service cannot communicate with model-service, or model-service is not running properly.
 
 **Solution**:
 
-1.  Check model-service logs: `docker compose logs model-service`
-2.  Verify model files are valid `.joblib` files
-3.  Ensure `MODEL_VERSION_ENV` matches the model filename (file should be `model-{MODEL_VERSION_ENV}.joblib`)
+1.  **Verify both services are running**:
+    ```bash
+    docker compose ps
+    ```
+    Expected: Both `app-service` and `model-service` should show `Up` status.
+
+2.  **Check model-service logs for errors**:
+    ```bash
+    docker compose logs model-service
+    ```
+    Look for startup errors or missing model files.
+
+3.  **Verify model files exist**:
+    ```bash
+    ls -la models/
+    ```
+    Required files:
+    - `model-{MODEL_VERSION_ENV}.joblib` (e.g., `model-1.0.2.joblib`)
+    - `preprocessor.joblib`
+
+4.  **Ensure `MODEL_VERSION_ENV` matches the model filename**:
+    Check `.env` file - if `MODEL_VERSION_ENV=1.0.2`, then file must be `model-1.0.2.joblib`
+
+5.  **Test model-service directly**:
+    ```bash
+    docker compose exec app-service curl -X POST http://model-service:8081/predict \
+      -H "Content-Type: application/json" \
+      -d '{"sms": "test message"}'
+    ```
+    If this fails, model-service has an issue. If it succeeds, check app-service configuration.
+
+6.  **Restart services**:
+    ```bash
+    docker compose down && docker compose up -d
+    ```
 
 ## Development and Maintenance
 
